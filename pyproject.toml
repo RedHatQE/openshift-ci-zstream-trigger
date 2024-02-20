@@ -6,3 +6,30 @@ output-format = "grouped"
 
 [tool.ruff.format]
 exclude = [".git", ".venv", ".mypy_cache", ".tox", "__pycache__"]
+
+[tool.poetry]
+name = "openshift-ci-zstream-trigger"
+version = "0.1.0"
+description = "Trigger openshift-ci jobs on new z-stream accepted builds"
+authors = ["Meni Yakove <myakove@gmail.com>", "Ruth Netser <ruty.n4@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "openshift-ci-zstream-trigger"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+openshift-python-utilities = "^5.0.26"
+requests = "^2.31.0"
+semver = "^3.0.2"
+flask = "^3.0.2"
+python-simple-logger = "^1.0.12"
+
+
+[tool.poetry.group.dev.dependencies]
+ipdb = "^0.13.13"
+ipython = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
