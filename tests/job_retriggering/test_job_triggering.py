@@ -79,7 +79,7 @@ class TestJobTriggering:
         indirect=True,
     )
     def test_add_job_trigger(self, mocker, db_filepath, junit_file, job_triggering):
-        job_trigger_module_path = "openshift_ci_job_re_trigger.libs.job_triggering.JobTriggering"
+        job_trigger_module_path = "ci_jobs_trigger.libs.openshift_ci_re_trigger.openshift_ci_re_trigger.JobTriggering"
         mocker.patch(
             f"{job_trigger_module_path}.trigger_job",
             return_value=TestJobTriggering.PROW_JOB_ID,
