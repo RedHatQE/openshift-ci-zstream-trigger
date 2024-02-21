@@ -24,6 +24,7 @@ requests = "^2.31.0"
 semver = "^3.0.2"
 flask = "^3.0.2"
 python-simple-logger = "^1.0.12"
+shortuuid = "^1.0.11"
 
 
 [tool.poetry.group.dev.dependencies]

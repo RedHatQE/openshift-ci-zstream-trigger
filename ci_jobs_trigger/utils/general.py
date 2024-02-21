@@ -32,3 +32,13 @@ def run_in_process(targets):
     for target, _kwargs in targets.items():
         proc = Process(target=target, **_kwargs)
         proc.start()
+
+
+def process_webhook_exception(logger, ex, slack_errors_webhook_url=None):
+    err_msg = f"Failed to process hook: {ex}"
+    logger.error(err_msg)
+
+    if slack_errors_webhook_url:
+        send_slack_message(message=err_msg, webhook_url=slack_errors_webhook_url, logger=logger)
+
+    return "Process failed"
