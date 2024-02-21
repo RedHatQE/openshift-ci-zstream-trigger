@@ -8,13 +8,13 @@ output-format = "grouped"
 exclude = [".git", ".venv", ".mypy_cache", ".tox", "__pycache__"]
 
 [tool.poetry]
-name = "openshift-ci-zstream-trigger"
+name = "ci-jobs-trigger"
 version = "0.1.0"
-description = "Trigger openshift-ci jobs on new z-stream accepted builds"
+description = "Triggers CI jobs (openshift-ci and Jenkins) scripts"
 authors = ["Meni Yakove <myakove@gmail.com>", "Ruth Netser <ruty.n4@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "openshift-ci-zstream-trigger"}]
+packages = [{include = "ci-jobs-trigger"}]
 
 
 [tool.poetry.dependencies]
@@ -30,6 +30,13 @@ python-simple-logger = "^1.0.12"
 ipdb = "^0.13.13"
 ipython = "*"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+pattern = "((?P<epoch>\\d+)!)?(?P<base>\\d+(\\.\\d+)*)"
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["VERSION"]
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"

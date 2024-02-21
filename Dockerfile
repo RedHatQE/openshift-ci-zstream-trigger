@@ -3,7 +3,7 @@ EXPOSE 5000
 
 ENV PRE_COMMIT_HOME=/tmp
 COPY pyproject.toml poetry.lock README.md /openshift-ci-zstream-trigger/
-COPY openshift-ci-zstream-trigger/ /openshift-ci-zstream-trigger/openshift-ci-zstream-trigger/
+COPY ci_jobs_trigger/ /openshift-ci-zstream-trigger/openshift-ci-zstream-trigger/
 WORKDIR /openshift-ci-zstream-trigger
 RUN python3 -m pip install pip --upgrade \
     && python3 -m pip install poetry pre-commit \
