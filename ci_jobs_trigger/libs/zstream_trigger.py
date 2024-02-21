@@ -1,7 +1,5 @@
-import hashlib
 import json
 import time
-from urllib.request import urlopen, Request
 
 import requests
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
@@ -48,10 +46,10 @@ def trigger_jobs(config, jobs, logger):
             headers={"Authorization": f"Bearer {config['trigger_token']}"},
             data='{"job_execution_type": "1"}',
         )
-        if not res.ok:
-            failed_triggers_jobs.append(job)
-        else:
+        if res.ok:
             successful_triggers_jobs.append(job)
+        else:
+            failed_triggers_jobs.append(job)
 
     if successful_triggers_jobs:
         success_msg = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs}"
@@ -65,53 +63,41 @@ def trigger_jobs(config, jobs, logger):
         send_slack_message(message=err_msg, webhook_url=config["slack_errors_webhook_url"], logger=logger)
         return False
 
-    return bool(failed_triggers_jobs)
-
 
 def process_and_trigger_jobs(logger, version=None):
-    stable_versions = get_accepted_cluster_versions()["stable"]
     config = get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR)
+    if not config:
+        return False
 
+    stable_versions = get_accepted_cluster_versions()["stable"]
     versions_from_config = config["versions"]
+
     if version:
         version_from_config = versions_from_config.get(version)
         if not version_from_config:
             raise ValueError(f"Version {version} not found in config.yaml")
 
         logger.info(f"Triggering all jobs from config file under version {version}")
-        trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        return trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
 
     else:
         for version, jobs in versions_from_config.items():
             version_str = str(version)
-            _version = stable_versions[version_str][0]
-            if already_processed_version(base_version=version, version=_version):
+            _latest_version = stable_versions[version_str][0]
+            if already_processed_version(base_version=version, version=_latest_version):
                 continue
 
-            logger.info(f"New Z-stream version {_version} found, triggering jobs: {jobs}")
+            logger.info(f"New Z-stream version {_latest_version} found, triggering jobs: {jobs}")
             if trigger_jobs(config=config, jobs=jobs, logger=logger):
-                update_processed_version(base_version=version_str, version=str(_version))
+                update_processed_version(base_version=version_str, version=str(_latest_version))
+                return True
 
 
 def monitor_and_trigger(logger):
-    url = Request("https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com", headers={"User-Agent": "Mozilla/5.0"})
-    logger.info("Website monitoring started!")
-    time.sleep(10)
     while True:
         try:
-            response = urlopen(url).read()
-            current_hash = hashlib.sha224(response).hexdigest()
-            time.sleep(30)
-            response = urlopen(url).read()
-            new_hash = hashlib.sha224(response).hexdigest()
-
-            if new_hash == current_hash:
-                continue
-
-            logger.info("Website changed!")
             process_and_trigger_jobs(logger=logger)
-            time.sleep(30)
-            continue
+            time.sleep(60 * 60 * 24)  # 1 day
 
         except Exception as ex:
             logger.warnning(f"Error: {ex}")

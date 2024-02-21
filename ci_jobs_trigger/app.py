@@ -33,6 +33,6 @@ def zstream_trigger():
 
 
 if __name__ == "__main__":
-    run_in_process(target=monitor_and_trigger, kwargs={"logger": APP.logger})
+    run_in_process(targets={monitor_and_trigger: {"logger": APP.logger}})
     APP.logger.info(f"Starting {APP.name} app")
     APP.run(port=5000, host="0.0.0.0", use_reloader=False)

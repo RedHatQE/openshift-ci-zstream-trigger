@@ -7,8 +7,11 @@ import yaml
 
 
 def get_config(os_environ):
-    with open(os.environ.get(os_environ, "config.yaml")) as fd:
-        return yaml.safe_load(fd)
+    try:
+        with open(os.environ.get(os_environ)) as fd:
+            return yaml.safe_load(fd)
+    except Exception:
+        return {}
 
 
 def send_slack_message(message, webhook_url, logger):
@@ -25,6 +28,7 @@ def send_slack_message(message, webhook_url, logger):
         )
 
 
-def run_in_process(target, **kwargs):
-    proc = Process(target=target, **kwargs)
-    proc.start()
+def run_in_process(targets):
+    for target, _kwargs in targets.items():
+        proc = Process(target=target, **_kwargs)
+        proc.start()
