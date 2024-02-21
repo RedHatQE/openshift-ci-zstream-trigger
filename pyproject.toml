@@ -14,7 +14,7 @@ description = "Triggers CI jobs (openshift-ci and Jenkins) scripts"
 authors = ["Meni Yakove <myakove@gmail.com>", "Ruth Netser <ruty.n4@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "ci-jobs-trigger"}]
+packages = [{include = "ci_jobs_trigger"}]
 
 
 [tool.poetry.dependencies]

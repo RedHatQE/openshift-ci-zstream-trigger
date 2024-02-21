@@ -16,7 +16,7 @@ APP.logger.addHandler(get_logger(APP.logger.name).handlers[0])
 
 
 @APP.route("/zstream-trigger", methods=["POST"])
-def process_webhook():
+def zstream_trigger():
     slack_errors_webhook_url = get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR).get(
         "slack_errors_webhook_url"
     )
