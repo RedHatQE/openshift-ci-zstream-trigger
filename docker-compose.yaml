@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  ci-jobs-trigger:
+    image: quay.io/redhat_msi/ci-jobs-trigger
+    container_name: ci-jobs-trigger
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
