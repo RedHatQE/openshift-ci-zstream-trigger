@@ -46,7 +46,7 @@ def openshift_ci_job_re_trigger():
     try:
         job_triggering = JobTriggering(hook_data=request.json, flask_logger=APP.logger)
         job_triggering.execute_trigger()
-        return "Process ended successfully."
+        return "Process done"
 
     except Exception as ex:
         process_webhook_exception(

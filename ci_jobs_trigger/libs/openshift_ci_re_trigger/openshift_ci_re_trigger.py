@@ -22,9 +22,8 @@ class JobTriggering:
         self.log_prefix = f"[{shortuuid.random(length=10)}]"
         self.hook_data = hook_data
         self.config = get_config(os_environ=OPENSHIFT_CI_RE_TRIGGER_CONFIG_OS_ENV_STR)
-
-        self.trigger_token = self.config.get("trigger_token")
-        self.trigger_url = self.config.get("trigger_url")
+        self.trigger_token = self.hook_data.get("trigger_token", self.config.get("trigger_token"))
+        self.trigger_url = self.hook_data.get("trigger_url", self.config.get("trigger_url"))
         self.build_id = self.hook_data.get("build_id")
         self.job_name = self.hook_data.get("job_name")
         self.prow_job_id = self.hook_data.get("prow_job_id")
