@@ -3,11 +3,12 @@ omit = ["tests/*"]
 source = ["ci_jobs_trigger"]
 
 [tool.coverage.report]
-fail_under = 40
+fail_under = 90
+skip_empty = true
 
 [tool.coverage.html]
 directory = "_tests_coverage"
-
+show_contexts = true
 
 [tool.ruff]
 preview = true
