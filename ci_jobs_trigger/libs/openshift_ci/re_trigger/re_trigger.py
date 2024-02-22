@@ -62,8 +62,6 @@ class JobTriggering:
                     webhook_url=self.slack_webhook_url,
                     logger=self.logger,
                 )
-                return True
-
                 return False
 
         if not self.wait_for_job_completed():

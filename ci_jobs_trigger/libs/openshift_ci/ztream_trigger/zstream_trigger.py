@@ -59,7 +59,9 @@ def trigger_jobs(config, jobs, logger):
 
 
 def process_and_trigger_jobs(logger, version=None, config_dict=None):
-    config = get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR, config_dict=config_dict)
+    config = get_config(
+        os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR, logger=logger, config_dict=config_dict
+    )
     if not config:
         return False
 
@@ -99,8 +101,10 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
 def monitor_and_trigger(logger):
     while True:
         try:
+            sleep_interval = 60 * 60 * 24  # 1 day
             process_and_trigger_jobs(logger=logger)
-            time.sleep(60 * 60 * 24)  # 1 day
+            logger.info(f"Sleeping for {int(sleep_interval / 3600)} hours")
+            time.sleep(sleep_interval)
 
         except Exception as ex:
             logger.warnning(f"Error: {ex}")

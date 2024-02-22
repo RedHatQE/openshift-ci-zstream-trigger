@@ -32,9 +32,9 @@ def zstream_trigger():
             logger=APP.logger,
             ex=ex,
             route="openshift-ci-zstream-trigger",
-            slack_errors_webhook_url=get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR).get(
-                "slack_errors_webhook_url"
-            ),
+            slack_errors_webhook_url=get_config(
+                os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR, logger=APP.logger
+            ).get("slack_errors_webhook_url"),
         )
 
 
