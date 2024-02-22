@@ -128,7 +128,7 @@ class JobTriggering:
             err_msg = f"Failed to get job status: {response.headers.get('grpc-message')}"
             send_slack_message(
                 message=err_msg,
-                webhook_url=self.slack_webhook_url,
+                webhook_url=self.slack_errors_webhook_url,
                 logger=self.logger,
             )
             raise OpenshiftCiReTriggerError(
