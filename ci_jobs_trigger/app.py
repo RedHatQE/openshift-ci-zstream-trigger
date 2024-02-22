@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask import request
 from simple_logger.logger import get_logger
@@ -58,4 +60,8 @@ def openshift_ci_job_re_trigger():
 if __name__ == "__main__":
     run_in_process(targets={monitor_and_trigger: {"logger": APP.logger}})
     APP.logger.info(f"Starting {APP.name} app")
-    APP.run(port=5000, host="0.0.0.0", use_reloader=False)
+    APP.run(
+        port=int(os.environ.get("CI_JOBS_TRIGGER_PORT", 5000)),
+        host="0.0.0.0",
+        use_reloader=True if os.environ.get("CI_JOBS_TRIGGER_USE_RELOAD") else False,
+    )
