@@ -1,3 +1,14 @@
+[tool.coverage.run]
+omit = ["tests/*"]
+source = ["ci_jobs_trigger"]
+
+[tool.coverage.report]
+fail_under = 40
+
+[tool.coverage.html]
+directory = "_tests_coverage"
+
+
 [tool.ruff]
 preview = true
 line-length = 120
