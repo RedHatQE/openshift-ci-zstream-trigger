@@ -10,29 +10,27 @@ from ci_jobs_trigger.utils.general import get_config, send_slack_message
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
 
 
-def processed_versions_file():
+def processed_versions_file(processed_versions_file_path):
     try:
-        with open(
-            get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR)["processed_versions_file_path"]
-        ) as fd:
+        with open(processed_versions_file_path) as fd:
             return json.load(fd)
     except Exception:
         return {}
 
 
-def update_processed_version(base_version, version):
-    processed_versions_file_content = processed_versions_file()
+def update_processed_version(base_version, version, processed_versions_file_path):
+    processed_versions_file_content = processed_versions_file(processed_versions_file_path=processed_versions_file_path)
     processed_versions_file_content.setdefault(base_version, []).append(version)
     processed_versions_file_content[base_version] = list(set(processed_versions_file_content[base_version]))
-    with open(
-        get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR)["processed_versions_file_path"], "w"
-    ) as fd:
+    with open(processed_versions_file_path, "w") as fd:
         json.dump(processed_versions_file_content, fd)
 
 
-def already_processed_version(base_version, version):
-    if base_versions := processed_versions_file().get(base_version):
-        return Version(base_versions[0]) <= Version(version)
+def already_processed_version(base_version, version, processed_versions_file_path):
+    if base_versions := processed_versions_file(processed_versions_file_path=processed_versions_file_path).get(
+        base_version
+    ):
+        return Version.parse(base_versions[0]) <= Version.parse(version)
     return False
 
 
@@ -64,8 +62,8 @@ def trigger_jobs(config, jobs, logger):
         return False
 
 
-def process_and_trigger_jobs(logger, version=None):
-    config = get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR)
+def process_and_trigger_jobs(logger, version=None, config_dict=None):
+    config = get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR, config_dict=config_dict)
     if not config:
         return False
 
@@ -81,15 +79,24 @@ def process_and_trigger_jobs(logger, version=None):
         return trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
 
     else:
+        _processed_versions_file_path = config["processed_versions_file_path"]
         for version, jobs in versions_from_config.items():
             version_str = str(version)
             _latest_version = stable_versions[version_str][0]
-            if already_processed_version(base_version=version, version=_latest_version):
+            if already_processed_version(
+                base_version=version,
+                version=_latest_version,
+                processed_versions_file_path=_processed_versions_file_path,
+            ):
                 continue
 
             logger.info(f"New Z-stream version {_latest_version} found, triggering jobs: {jobs}")
             if trigger_jobs(config=config, jobs=jobs, logger=logger):
-                update_processed_version(base_version=version_str, version=str(_latest_version))
+                update_processed_version(
+                    base_version=version_str,
+                    version=str(_latest_version),
+                    processed_versions_file_path=_processed_versions_file_path,
+                )
                 return True
 
 
