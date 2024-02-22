@@ -1,3 +1,14 @@
+[tool.coverage.run]
+omit = ["tests/*"]
+source = ["ci_jobs_trigger"]
+
+[tool.coverage.report]
+fail_under = 40
+
+[tool.coverage.html]
+directory = "_tests_coverage"
+
+
 [tool.ruff]
 preview = true
 line-length = 120
@@ -33,6 +44,7 @@ ipython = "*"
 
 
 [tool.poetry.group.tests.dependencies]
+pytest = "^8.0.1"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.12.0"
 

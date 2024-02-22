@@ -6,7 +6,10 @@ import requests
 import yaml
 
 
-def get_config(os_environ):
+def get_config(os_environ, config_dict=None):
+    if config_dict:
+        return config_dict
+
     try:
         with open(os.environ.get(os_environ)) as fd:
             return yaml.safe_load(fd)
