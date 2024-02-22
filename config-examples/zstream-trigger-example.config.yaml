@@ -1,4 +1,3 @@
-trigger_url: https://gangway-ci.apps.ci.l2s4.p1.openshiftapps.com/v1/executions
 trigger_token: <openshift-ci trigger token>
 slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>

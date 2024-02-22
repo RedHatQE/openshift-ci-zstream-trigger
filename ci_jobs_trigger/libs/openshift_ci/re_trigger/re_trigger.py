@@ -7,27 +7,24 @@ import xmltodict
 import yaml
 from timeout_sampler import TimeoutSampler
 
-from ci_jobs_trigger.libs.openshift_ci_re_trigger.job_db import DB
-from ci_jobs_trigger.utils.constants import AUTHORIZATION_HEADER
-from ci_jobs_trigger.utils.general import get_config, send_slack_message
-from ci_jobs_trigger.utils.openshift_ci import trigger_job
-
-OPENSHIFT_CI_RE_TRIGGER_CONFIG_OS_ENV_STR = "OPENSHIFT_CI_RE_TRIGGER_CONFIG"
+from ci_jobs_trigger.libs.openshift_ci.re_trigger.job_db import DB
+from ci_jobs_trigger.libs.openshift_ci.utils.constants import AUTHORIZATION_HEADER, GANGWAY_API_URL
+from ci_jobs_trigger.utils.general import send_slack_message
+from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import trigger_job
 
 
 class JobTriggering:
-    def __init__(self, hook_data, flask_logger):
-        self.logger = flask_logger
+    def __init__(self, hook_data, logger):
+        self.logger = logger
 
         self.log_prefix = f"[{shortuuid.random(length=10)}]"
         self.hook_data = hook_data
-        self.config = get_config(os_environ=OPENSHIFT_CI_RE_TRIGGER_CONFIG_OS_ENV_STR)
-        self.trigger_token = self.hook_data.get("trigger_token", self.config.get("trigger_token"))
-        self.trigger_url = self.hook_data.get("trigger_url", self.config.get("trigger_url"))
+        self.trigger_token = self.hook_data.get("trigger_token")
+        self.trigger_url = GANGWAY_API_URL
         self.build_id = self.hook_data.get("build_id")
         self.job_name = self.hook_data.get("job_name")
         self.prow_job_id = self.hook_data.get("prow_job_id")
-        self.slack_webhook_url = self.config.get("slack_webhook_url")
+        self.slack_webhook_url = self.hook_data.get("slack_webhook_url")
         self.verify_hook_data()
 
         self.logger.info(
@@ -35,9 +32,6 @@ class JobTriggering:
         )
 
     def verify_hook_data(self):
-        if not self.trigger_url:
-            self.logger.error(f"{self.log_prefix} openshift ci trigger url is mandatory.")
-
         if not self.trigger_token:
             self.logger.error(f"{self.log_prefix} openshift ci token is mandatory.")
 
@@ -50,7 +44,12 @@ class JobTriggering:
         if not self.prow_job_id:
             self.logger.error(f"{self.log_prefix} openshift ci prow job id is mandatory.")
 
-        if not all((self.trigger_token, self.job_name, self.build_id, self.prow_job_id, self.trigger_url)):
+        if not all((
+            self.trigger_token,
+            self.job_name,
+            self.build_id,
+            self.prow_job_id,
+        )):
             raise ValueError(f"{self.log_prefix} Missing parameters")
 
     def execute_trigger(self, job_db_path=None):
@@ -86,7 +85,7 @@ Prow ID: {self.prow_job_id}
             junit_xml=self.get_tests_from_junit_operator_by_build_id()
         )
         if self.is_build_failed_on_setup(tests_dict=tests_dict):
-            prow_job_id = self.trigger_job()
+            prow_job_id = self._trigger_job()
             if self.slack_webhook_url:
                 send_slack_message(
                     message=f"{self.log_prefix}{slack_msg}Job failed during `pre phase`, re-triggering job",
@@ -129,9 +128,9 @@ Prow ID: {self.prow_job_id}
                 self.logger.info(f"{self.log_prefix} Job ended. Status: {job_status}")
                 return True
 
-    def trigger_job(self):
+    def _trigger_job(self):
         self.logger.info(f"{self.log_prefix} Trigger job.")
-        response = trigger_job(trigger_url=self.trigger_url, job_name=self.job_name, trigger_token=self.trigger_token)
+        response = trigger_job(job_name=self.job_name, trigger_token=self.trigger_token)
 
         if not response.ok:
             raise requests.exceptions.RequestException(

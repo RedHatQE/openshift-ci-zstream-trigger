@@ -5,9 +5,7 @@ from simple_logger.logger import get_logger
 
 import xmltodict
 
-from ci_jobs_trigger.libs.openshift_ci_re_trigger.openshift_ci_re_trigger import (
-    JobTriggering,
-)
+from ci_jobs_trigger.libs.openshift_ci.re_trigger.re_trigger import JobTriggering
 
 LOGGER = get_logger(name=__name__)
 
@@ -25,13 +23,12 @@ def hook_data_dict():
         "build_id": "1",
         "prow_job_id": "123456",
         "trigger_token": "trigger_token",
-        "trigger_url": "trigger_url",
     })
 
 
 @pytest.fixture()
 def job_triggering(hook_data_dict):
-    return JobTriggering(hook_data=hook_data_dict, flask_logger=LOGGER)
+    return JobTriggering(hook_data=hook_data_dict, logger=LOGGER)
 
 
 @pytest.fixture(scope="class")
@@ -39,17 +36,17 @@ def db_filepath(tmp_path_factory):
     return tmp_path_factory.getbasetemp() / "job_re_triggering_test.db"
 
 
-@pytest.mark.parametrize("param", ["job_name", "build_id", "prow_job_id", "trigger_token", "trigger_url"])
+@pytest.mark.parametrize("param", ["job_name", "build_id", "prow_job_id", "trigger_token"])
 def test_verify_job_trigger_mandatory_params(hook_data_dict, param):
     hook_data_dict.pop(param)
 
     with pytest.raises(ValueError):
-        JobTriggering(hook_data=hook_data_dict, flask_logger=LOGGER)
+        JobTriggering(hook_data=hook_data_dict, logger=LOGGER)
 
 
 @pytest.mark.parametrize(
     "junit_file",
-    ["tests/job_retriggering/manifests/junit_operator_failed_pre_phase.xml"],
+    ["ci_jobs_trigger/tests/job_retriggering/manifests/junit_operator_failed_pre_phase.xml"],
     indirect=True,
 )
 def test_failed_job_in_pre_phase(junit_file, job_triggering):
@@ -59,7 +56,7 @@ def test_failed_job_in_pre_phase(junit_file, job_triggering):
 
 @pytest.mark.parametrize(
     "junit_file",
-    ["tests/job_retriggering/manifests/junit_operator_failed_test_phase.xml"],
+    ["ci_jobs_trigger/tests/job_retriggering/manifests/junit_operator_failed_test_phase.xml"],
     indirect=True,
 )
 def test_failed_job_in_tests_phase(junit_file, job_triggering):
@@ -75,13 +72,13 @@ class TestJobTriggering:
 
     @pytest.mark.parametrize(
         "junit_file",
-        ["tests/job_retriggering/manifests/junit_operator_failed_pre_phase.xml"],
+        ["ci_jobs_trigger/tests/job_retriggering/manifests/junit_operator_failed_pre_phase.xml"],
         indirect=True,
     )
     def test_add_job_trigger(self, mocker, db_filepath, junit_file, job_triggering):
-        job_trigger_module_path = "ci_jobs_trigger.libs.openshift_ci_re_trigger.openshift_ci_re_trigger.JobTriggering"
+        job_trigger_module_path = "ci_jobs_trigger.libs.openshift_ci.re_trigger.re_trigger.JobTriggering"
         mocker.patch(
-            f"{job_trigger_module_path}.trigger_job",
+            f"{job_trigger_module_path}._trigger_job",
             return_value=TestJobTriggering.PROW_JOB_ID,
         )
         mocker.patch(
@@ -97,5 +94,5 @@ class TestJobTriggering:
 
     def test_already_triggered(self, db_filepath, hook_data_dict):
         hook_data_dict["prow_job_id"] = TestJobTriggering.PROW_JOB_ID
-        job_triggering = JobTriggering(hook_data=hook_data_dict, flask_logger=LOGGER)
+        job_triggering = JobTriggering(hook_data=hook_data_dict, logger=LOGGER)
         assert not job_triggering.execute_trigger(db_filepath), "Job should not be triggered"

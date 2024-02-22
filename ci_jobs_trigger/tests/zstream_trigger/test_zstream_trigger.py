@@ -3,15 +3,15 @@ import os
 import pytest
 from simple_logger.logger import get_logger
 
-from ci_jobs_trigger.libs.zstream_trigger import (
-    process_and_trigger_jobs,
+from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger import (
     OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
+    process_and_trigger_jobs,
 )
 from ci_jobs_trigger.tests.zstream_trigger.manifests.versions import VERSIONS
 
 LOGGER = get_logger("test_zstream_trigger")
 
-LIBS_ZSTREAM_TRIGGER_PATH = "ci_jobs_trigger.libs.zstream_trigger"
+LIBS_ZSTREAM_TRIGGER_PATH = "ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger"
 GET_ACCEPTED_CLUSTER_VERSIONS_PATH = "ocp_utilities.cluster_versions.get_accepted_cluster_versions"
 TRIGGER_JOBS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.trigger_jobs"
 
@@ -19,7 +19,6 @@ TRIGGER_JOBS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.trigger_jobs"
 @pytest.fixture()
 def config_dict(tmp_path_factory):
     return {
-        "trigger_url": "https://gangway-ci.apps.ci.l2s4.p1.openshiftapps.com/v1/executions",
         "trigger_token": "123456",
         "slack_webhook_url": "https://webhook",
         "slack_errors_webhook_url": "https://webhook-error",
