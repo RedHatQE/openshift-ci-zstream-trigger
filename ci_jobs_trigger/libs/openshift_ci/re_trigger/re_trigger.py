@@ -8,9 +8,12 @@ import yaml
 from timeout_sampler import TimeoutSampler
 
 from ci_jobs_trigger.libs.openshift_ci.re_trigger.job_db import DB
-from ci_jobs_trigger.libs.openshift_ci.utils.constants import AUTHORIZATION_HEADER, GANGWAY_API_URL
-from ci_jobs_trigger.utils.general import send_slack_message
-from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import trigger_job
+from ci_jobs_trigger.libs.openshift_ci.utils.constants import GANGWAY_API_URL
+from ci_jobs_trigger.utils.general import OpenshiftCiReTriggerError, send_slack_message
+from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import (
+    get_authorization_header,
+    trigger_job,
+)
 
 
 class JobTriggering:
@@ -25,7 +28,10 @@ class JobTriggering:
         self.job_name = self.hook_data.get("job_name")
         self.prow_job_id = self.hook_data.get("prow_job_id")
         self.slack_webhook_url = self.hook_data.get("slack_webhook_url")
+        self.slack_errors_webhook_url = self.hook_data.get("slack_errors_webhook_url")
         self.verify_hook_data()
+
+        self.slack_msg_prefix = self.generate_slack_msg_prefix()
 
         self.logger.info(
             f"{self.log_prefix} Start processing flow for Job {self.job_name}|build {self.build_id}|prow {self.prow_job_id}"
@@ -44,54 +50,42 @@ class JobTriggering:
         if not self.prow_job_id:
             self.logger.error(f"{self.log_prefix} openshift ci prow job id is mandatory.")
 
-        if not all((
-            self.trigger_token,
-            self.job_name,
-            self.build_id,
-            self.prow_job_id,
-        )):
+        if not all((self.trigger_token, self.job_name, self.build_id, self.prow_job_id)):
             raise ValueError(f"{self.log_prefix} Missing parameters")
 
     def execute_trigger(self, job_db_path=None):
-        slack_msg = f"""
-Job: {self.job_name}
-Build ID: {self.build_id}
-Prow ID: {self.prow_job_id}
-"""
         with DB(job_db_path=job_db_path) as database:
             if database.check_prow_job_id_in_db(job_name=self.job_name, prow_job_id=self.prow_job_id):
                 self.logger.warning(f"{self.log_prefix} Job was already auto-triggered. Exiting.")
-                if self.slack_webhook_url:
-                    send_slack_message(
-                        message=f"{self.log_prefix}{slack_msg}already auto-triggered, will not re-trigger",
-                        webhook_url=self.slack_webhook_url,
-                        logger=self.logger,
-                    )
-                    return True
+                send_slack_message(
+                    message=f"{self.slack_msg_prefix}already auto-triggered, will not re-trigger",
+                    webhook_url=self.slack_webhook_url,
+                    logger=self.logger,
+                )
+                return True
 
                 return False
 
         if not self.wait_for_job_completed():
-            if self.slack_webhook_url:
-                send_slack_message(
-                    message=f"{self.log_prefix}{slack_msg}Timeout waiting for job to complete, not re-triggering",
-                    webhook_url=self.slack_webhook_url,
-                    logger=self.logger,
-                )
+            err_msg = "Timeout waiting for job to complete, not re-triggering"
+            send_slack_message(
+                message=f"{self.slack_msg_prefix}{err_msg}",
+                webhook_url=self.slack_errors_webhook_url,
+                logger=self.logger,
+            )
 
-            raise requests.exceptions.RequestException()
+            raise OpenshiftCiReTriggerError(log_prefix=self.log_prefix, msg=err_msg)
 
         tests_dict = self.get_testsuites_testcase_from_junit_operator(
             junit_xml=self.get_tests_from_junit_operator_by_build_id()
         )
         if self.is_build_failed_on_setup(tests_dict=tests_dict):
             prow_job_id = self._trigger_job()
-            if self.slack_webhook_url:
-                send_slack_message(
-                    message=f"{self.log_prefix}{slack_msg}Job failed during `pre phase`, re-triggering job",
-                    webhook_url=self.slack_webhook_url,
-                    logger=self.logger,
-                )
+            send_slack_message(
+                message=f"{self.slack_msg_prefix}Job failed during `pre phase`, re-triggering job",
+                webhook_url=self.slack_webhook_url,
+                logger=self.logger,
+            )
 
             with DB(job_db_path=job_db_path) as database:
                 database.write(job_name=self.job_name, prow_job_id=prow_job_id)
@@ -104,7 +98,7 @@ Prow ID: {self.prow_job_id}
         try:
             response = self.get_url_content(
                 url=f"{self.trigger_url}/{self.prow_job_id}",
-                headers=AUTHORIZATION_HEADER.fomat(trigger_token=self.trigger_token),
+                headers=get_authorization_header(trigger_token=self.trigger_token),
             )
 
             return yaml.safe_load(response).get("job_status")
@@ -133,8 +127,15 @@ Prow ID: {self.prow_job_id}
         response = trigger_job(job_name=self.job_name, trigger_token=self.trigger_token)
 
         if not response.ok:
-            raise requests.exceptions.RequestException(
-                f"{self.log_prefix} Failed to get job status: {response.headers['grpc-message']}"
+            err_msg = f"Failed to get job status: {response.headers.get('grpc-message')}"
+            send_slack_message(
+                message=err_msg,
+                webhook_url=self.slack_webhook_url,
+                logger=self.logger,
+            )
+            raise OpenshiftCiReTriggerError(
+                log_prefix={self.log_prefix},
+                msg=err_msg,
             )
 
         prow_job_id = json.loads(response.content.decode())["id"]
@@ -181,3 +182,10 @@ Prow ID: {self.prow_job_id}
         raise requests.exceptions.RequestException(
             f"Failed to retrieve url {url} on {response_text}. Status {response.status_code}"
         )
+
+    def generate_slack_msg_prefix(self):
+        return f"""
+Job: {self.job_name}
+Build ID: {self.build_id}
+Prow ID: {self.prow_job_id}
+"""

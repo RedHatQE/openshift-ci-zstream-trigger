@@ -28,9 +28,10 @@ def zstream_trigger():
         process_and_trigger_jobs(version=version, logger=APP.logger)
         return "Process done"
     except Exception as ex:
-        process_webhook_exception(
+        return process_webhook_exception(
             logger=APP.logger,
             ex=ex,
+            route="openshift-ci-zstream-trigger",
             slack_errors_webhook_url=get_config(os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR).get(
                 "slack_errors_webhook_url"
             ),
@@ -46,8 +47,11 @@ def openshift_ci_job_re_trigger():
         return "Process done"
 
     except Exception as ex:
-        process_webhook_exception(
-            logger=APP.logger, ex=ex, slack_errors_webhook_url=hook_data.get("slack_errors_webhook_url")
+        return process_webhook_exception(
+            logger=APP.logger,
+            ex=ex,
+            route="openshift-ci-re-trigger",
+            slack_errors_webhook_url=hook_data.get("slack_errors_webhook_url"),
         )
 
 
