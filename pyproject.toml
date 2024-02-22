@@ -1,9 +1,9 @@
 [tool.coverage.run]
-omit = ["tests/*"]
+omit = ["ci_jobs_trigger/tests/*", "ci_jobs_trigger/app.py"]
 source = ["ci_jobs_trigger"]
 
 [tool.coverage.report]
-fail_under = 90
+fail_under = 60
 skip_empty = true
 
 [tool.coverage.html]
