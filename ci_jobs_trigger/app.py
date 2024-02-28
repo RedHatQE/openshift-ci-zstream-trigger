@@ -20,6 +20,11 @@ APP.logger.removeHandler(default_handler)
 APP.logger.addHandler(get_logger(APP.logger.name).handlers[0])
 
 
+@APP.route("/healthcheck")
+def healthcheck():
+    return "alive"
+
+
 @APP.route("/openshift-ci-zstream-trigger", methods=["POST"])
 def zstream_trigger():
     try:
