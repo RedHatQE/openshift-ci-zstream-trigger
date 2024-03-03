@@ -10,17 +10,6 @@ from simple_logger.logger import get_logger
 from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import process_hook
 
 LOGGER = get_logger("test_addons_webhook_trigger")
-#
-#
-# class MockMergeRequest:
-#     @staticmethod
-#     def changes():
-#         return {"changes": [
-#             {
-#                 "new_path": "addons/addon/addonimagesets/stage/addon.yaml",
-#             }
-#         ]
-#         }
 
 
 class MockRequest:
