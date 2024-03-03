@@ -81,10 +81,6 @@ def process():
 
 
 if __name__ == "__main__":
-    # run_iib_update(logger=APP.logger)
-    # import ipdb
-    #
-    # ipdb.set_trace()
     run_in_process(
         targets={
             monitor_and_trigger: {"logger": APP.logger},
