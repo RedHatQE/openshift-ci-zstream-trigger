@@ -1,7 +1,7 @@
 from api4jenkins import Jenkins
 
 
-def trigger_job(job, config_data):
+def jenkins_trigger_job(job, config_data):
     api = Jenkins(
         url=config_data["jenkins_url"],
         auth=(config_data["jenkins_username"], config_data["jenkins_token"]),
@@ -14,6 +14,7 @@ def trigger_job(job, config_data):
 
     try:
         res = job.build(parameters=job_params)
-        return res.get_build().exists(), res.get_build()
+        build = res.get_build()
+        return build.exists(), build
     except Exception:
         return False, None

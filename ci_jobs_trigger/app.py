@@ -5,7 +5,7 @@ from flask.logging import default_handler
 
 from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import (
     process_hook,
-    ADDONS_WEBHOOK_TRIGGER_CONFIG_STR,
+    ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR,
 )
 from ci_jobs_trigger.libs.openshift_ci.re_trigger.re_trigger import JobTriggering
 from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger import (
@@ -74,13 +74,17 @@ def process():
             logger=APP.logger,
             ex=ex,
             route="addons-trigger",
-            slack_errors_webhook_url=get_config(os_environ=ADDONS_WEBHOOK_TRIGGER_CONFIG_STR, logger=APP.logger).get(
-                "slack_errors_webhook_url"
-            ),
+            slack_errors_webhook_url=get_config(
+                os_environ=ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR, logger=APP.logger
+            ).get("slack_errors_webhook_url"),
         )
 
 
 if __name__ == "__main__":
+    # run_iib_update(logger=APP.logger)
+    # import ipdb
+    #
+    # ipdb.set_trace()
     run_in_process(
         targets={
             monitor_and_trigger: {"logger": APP.logger},

@@ -17,11 +17,12 @@ OPERATORS_DATA_FILE = os.path.join(LOCAL_REPO_PATH, OPERATORS_DATA_FILE_NAME)
 
 
 def read_data_file():
-    with open(OPERATORS_DATA_FILE, "r") as fd:
-        try:
+    try:
+        with open(OPERATORS_DATA_FILE, "r") as fd:
             return json.load(fd)
-        except JSONDecodeError:
-            return {}
+
+    except (FileNotFoundError, JSONDecodeError):
+        return {}
 
 
 def get_operator_data_from_url(operator_name, ocp_version, logger):
@@ -134,33 +135,36 @@ def push_changes(repo_url, slack_webhook_url, logger):
     logger.info(f"Done check if {OPERATORS_DATA_FILE} was changed")
 
 
+def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
+    logger.info("Check for new operators IIB")
+    config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
+    slack_errors_webhook_url = config_data.get("slack_errors_webhook_url")
+    token = config_data["github_token"]
+    repo_url = f"https://{token}@github.com/RedHatQE/ci-jobs-trigger.git"
+    clone_repo(repo_url=repo_url)
+    trigger_dict = get_new_iib(operator_config_data=config_data, logger=logger)
+    push_changes(repo_url=repo_url, slack_webhook_url=slack_errors_webhook_url, logger=logger)
+
+    for _, _job_data in trigger_dict.items():
+        for _job_name, _job_dict in _job_data.items():
+            operators = _job_dict["operators"]
+            if any([_value["triggered"] for _value in operators.values()]):
+                trigger_ci_job(
+                    job=_job_name,
+                    product=", ".join(operators.keys()),
+                    _type="operator",
+                    trigger_dict=trigger_dict,
+                    ci=_job_dict["ci"],
+                    logger=logger,
+                    config_data=config_data,
+                )
+
+
 def run_iib_update(logger):
     slack_errors_webhook_url = None
     while True:
         try:
-            logger.info("Check for new operators IIB")
-            config_data = get_config(os_environ="CI_IIB_TRIGGER_CONFIG", logger=logger)
-            slack_errors_webhook_url = config_data.get("slack_errors_webhook_url")
-            token = config_data["github_token"]
-            repo_url = f"https://{token}@github.com/RedHatQE/ci-jobs-trigger.git"
-            clone_repo(repo_url=repo_url)
-            trigger_dict = get_new_iib(operator_config_data=config_data, logger=logger)
-            push_changes(repo_url=repo_url, slack_webhook_url=slack_errors_webhook_url, logger=logger)
-
-            for _, _job_data in trigger_dict.items():
-                for _job_name, _job_dict in _job_data.items():
-                    operators = _job_dict["operators"]
-                    if any([_value["triggered"] for _value in operators.values()]):
-                        trigger_ci_job(
-                            job=_job_name,
-                            product=", ".join(operators.keys()),
-                            _type="operator",
-                            trigger_dict=trigger_dict,
-                            ci=_job_dict["ci"],
-                            logger=logger,
-                            config_data=config_data,
-                        )
-
+            fetch_update_iib_and_trigger_jobs(logger=logger)
         except Exception as ex:
             err_msg = f"Fail to run run_iib_update function. {ex}"
             logger.error(err_msg)

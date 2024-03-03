@@ -5,7 +5,7 @@ from ocp_utilities.cluster_versions import get_accepted_cluster_versions
 from semver import Version
 
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
-from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import trigger_job
+from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
 
@@ -38,7 +38,7 @@ def trigger_jobs(config, jobs, logger):
     failed_triggers_jobs = []
     successful_triggers_jobs = []
     for job in jobs:
-        res = trigger_job(job_name=job, trigger_token=config["trigger_token"])
+        res = openshift_ci_trigger_job(job_name=job, trigger_token=config["trigger_token"])
 
         if res.ok:
             successful_triggers_jobs.append(job)

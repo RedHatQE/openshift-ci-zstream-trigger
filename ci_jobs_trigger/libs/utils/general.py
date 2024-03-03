@@ -1,8 +1,6 @@
-import json
-
 from ci_jobs_trigger.libs.openshift_ci.utils.constants import GANGWAY_API_URL
-from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import trigger_job as trigger_job_openshift
-from ci_jobs_trigger.libs.jenkins.utils.jenkins import trigger_job as trigger_job_jenkins
+from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
+from ci_jobs_trigger.libs.jenkins.utils.general import jenkins_trigger_job
 from ci_jobs_trigger.utils.general import send_slack_message, AddonsWebhookTriggerError
 
 
@@ -35,23 +33,28 @@ def trigger_ci_job(
     config_data,
     trigger_dict=None,
 ):
-    logger.info(f"Triggering openshift-ci job for {product} [{_type}]: {job}")
+    openshift_ci_response = None
+    logger.info(f"Triggering {ci} job for {product} [{_type}]: {job}")
     job_dict = trigger_dict[[*trigger_dict][0]] if trigger_dict else None
     openshift_ci = ci == "openshift-ci"
     jenkins_ci = ci == "jenkins"
 
     if openshift_ci:
-        out = trigger_job_openshift(job_name=job, trigger_token=config_data["trigger_token"])
-        rc, res = out.ok, json.loads(out.text)
+        openshift_ci_response = openshift_ci_trigger_job(job_name=job, trigger_token=config_data["trigger_token"])
+        rc = openshift_ci_response.ok
+        res = openshift_ci_response.json() if rc else openshift_ci_response.text
 
     elif jenkins_ci:
-        rc, res = trigger_job_jenkins(job=job, config_data=config_data)
+        rc, res = jenkins_trigger_job(job=job, config_data=config_data)
 
     else:
         raise ValueError(f"Unknown ci: {ci}")
 
     if not rc:
         msg = f"Failed to trigger {ci} job: {job} for addon {product}, "
+        if openshift_ci_response:
+            msg += f"response: {openshift_ci_response.headers.get('grpc-message')}"
+
         logger.error(msg)
         send_slack_message(
             message=msg,
@@ -61,13 +64,13 @@ def trigger_ci_job(
         raise AddonsWebhookTriggerError(msg=msg)
 
     if openshift_ci:
-        response = {dict_to_str(_dict=res)}
+        openshift_ci_response = {dict_to_str(_dict=res)}
         status_info_command = f"""
 curl -X GET -d -H "Authorization: Bearer $OPENSHIFT_CI_TOKEN" {GANGWAY_API_URL}/{res['id']}
 """
 
     elif jenkins_ci:
-        response = ""
+        openshift_ci_response = ""
         status_info_command = res.url
 
     message = f"""
@@ -75,7 +78,7 @@ curl -X GET -d -H "Authorization: Bearer $OPENSHIFT_CI_TOKEN" {GANGWAY_API_URL}/
 {ci}: New product {product} [{_type}] was merged/updated.
 triggering job {job}
 response:
-    {response}
+    {openshift_ci_response}
 
 
 Get the status of the job run:
