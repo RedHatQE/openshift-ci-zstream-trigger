@@ -54,7 +54,7 @@ def trigger_jobs(config, jobs, logger):
     if failed_triggers_jobs:
         err_msg = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs}"
         logger.info(err_msg)
-        send_slack_message(message=err_msg, webhook_url=config["slack_errors_webhook_url"], logger=logger)
+        send_slack_message(message=err_msg, webhook_url=config.get("slack_errors_webhook_url"), logger=logger)
         return False
 
 

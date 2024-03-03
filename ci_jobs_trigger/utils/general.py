@@ -6,6 +6,14 @@ import requests
 import yaml
 
 
+class AddonsWebhookTriggerError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return f"Addons webhook trigger failed: {self.msg}"
+
+
 class OpenshiftCiReTriggerError(Exception):
     def __init__(self, log_prefix, msg):
         self.log_prefix = log_prefix
@@ -52,7 +60,7 @@ def process_webhook_exception(logger, ex, route, slack_errors_webhook_url=None):
     err_msg = f"{route}: Failed to process hook{f': {ex}' if ex else ''}"
     logger.error(err_msg)
 
-    if not isinstance(ex, OpenshiftCiReTriggerError):
+    if not isinstance(ex, OpenshiftCiReTriggerError) or not isinstance(ex, AddonsWebhookTriggerError):
         send_slack_message(message=err_msg, webhook_url=slack_errors_webhook_url, logger=logger)
 
     return "Process failed"
