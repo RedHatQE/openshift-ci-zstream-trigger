@@ -61,7 +61,6 @@ def config_dict(tmp_path_factory):
 
 def test_fetch_update_iib_and_trigger_jobs(mocker, config_dict):
     mocker.patch.object(requests, "get", return_value=MockRequest())
-
     mocker.patch("ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger.push_changes", return_value=True)
 
     fetch_update_iib_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
