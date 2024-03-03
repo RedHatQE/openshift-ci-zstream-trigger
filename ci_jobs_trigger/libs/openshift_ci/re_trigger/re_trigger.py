@@ -8,11 +8,11 @@ import yaml
 from timeout_sampler import TimeoutSampler
 
 from ci_jobs_trigger.libs.openshift_ci.re_trigger.job_db import DB
-from ci_jobs_trigger.libs.openshift_ci.utils.constants import GANGWAY_API_URL
+from ci_jobs_trigger.libs.openshift_ci.utils.constants import GANGWAY_API_URL, PROW_LOGS_URL_PREFIX
 from ci_jobs_trigger.utils.general import OpenshiftCiReTriggerError, send_slack_message
-from ci_jobs_trigger.libs.openshift_ci.utils.openshift_ci import (
+from ci_jobs_trigger.libs.openshift_ci.utils.general import (
     get_authorization_header,
-    trigger_job,
+    openshift_ci_trigger_job,
 )
 
 
@@ -122,13 +122,13 @@ class JobTriggering:
 
     def _trigger_job(self):
         self.logger.info(f"{self.log_prefix} Trigger job.")
-        response = trigger_job(job_name=self.job_name, trigger_token=self.trigger_token)
+        response = openshift_ci_trigger_job(job_name=self.job_name, trigger_token=self.trigger_token)
 
         if not response.ok:
             err_msg = f"Failed to get job status: {response.headers.get('grpc-message')}"
             send_slack_message(
                 message=err_msg,
-                webhook_url=self.slack_webhook_url,
+                webhook_url=self.slack_errors_webhook_url,
                 logger=self.logger,
             )
             raise OpenshiftCiReTriggerError(
@@ -184,6 +184,6 @@ class JobTriggering:
     def generate_slack_msg_prefix(self):
         return f"""
 Job: {self.job_name}
-Build ID: {self.build_id}
+Build ID: <{PROW_LOGS_URL_PREFIX}/{self.job_name}/{self.build_id}|{self.build_id}>
 Prow ID: {self.prow_job_id}
 """
