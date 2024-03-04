@@ -1,8 +1,15 @@
-trigger_token: <openshift-ci trigger token>
+# Mandatory - token for https://github.com/RedHatQE/ci-jobs-trigger
 github_token: <Github token>
+
+# openshift ci trigger config - mandatory if using openshift ci
+trigger_token: <openshift-ci trigger token>
+
+# jenkins trigger config - mandatory if using jenkins
 jenkins_token: <jenkins token>
 jenkins_username: <jenkins username>
 jenkins_url: <jenkins url>
+
+# Optional
 slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>
 

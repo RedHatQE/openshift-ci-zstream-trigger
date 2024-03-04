@@ -1,5 +1,13 @@
 # ci-jobs-trigger
+A Flask-based webhook server to trigger ci jobs.
 
+
+## Supported triggering flows:
+
+- [ztream_trigger](ci_jobs_trigger/libs/openshift_ci/ztream_trigger) - Trigger ci jobs on release of new OCP z-stream
+- [re_trigger](ci_jobs_trigger/libs/openshift_ci/re_trigger) - Re-trigger ci job on failure
+- [operators_iib_trigger](ci_jobs_trigger/libs/operators_iib_trigger) - Trigger ci job on new operator index image
+- [addons_webhook_trigger](ci_jobs_trigger/libs/addons_webhook_trigger) - Trigger ci job when a new addon is released
 
 ## Build container
 
@@ -19,7 +27,7 @@ docker build -t ci-jobs-trigger .
 
 ### Development
 
-To run locally you need to export some os environment variables
+To run locally you can export the following environment variables:
 
 ```bash
 poetry install

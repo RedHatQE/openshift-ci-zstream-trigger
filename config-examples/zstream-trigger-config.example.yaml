@@ -1,4 +1,7 @@
+# Mandatory
 trigger_token: <openshift-ci trigger token>
+
+# Optional
 slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>
 
