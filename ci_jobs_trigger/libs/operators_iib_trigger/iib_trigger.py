@@ -9,7 +9,8 @@ import requests
 from git import Repo
 
 from ci_jobs_trigger.libs.utils.general import trigger_ci_job
-from ci_jobs_trigger.utils.general import send_slack_message, get_config
+from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
+from ci_jobs_trigger.utils.general import send_slack_message, get_config, AddonsWebhookTriggerError
 
 LOCAL_REPO_PATH = "/tmp/ci-jobs-trigger"
 OPERATORS_DATA_FILE_NAME = "operators-latest-iib.json"
@@ -145,26 +146,35 @@ def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
     trigger_dict = get_new_iib(operator_config_data=config_data, logger=logger)
     push_changes(repo_url=repo_url, slack_webhook_url=slack_errors_webhook_url, logger=logger)
 
+    failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():
         for _job_name, _job_dict in _job_data.items():
             operators = _job_dict["operators"]
             if any([_value["triggered"] for _value in operators.values()]):
-                trigger_ci_job(
-                    job=_job_name,
-                    product=", ".join(operators.keys()),
-                    _type="operator",
-                    trigger_dict=trigger_dict,
-                    ci=_job_dict["ci"],
-                    logger=logger,
-                    config_data=config_data,
-                )
+                try:
+                    trigger_ci_job(
+                        job=_job_name,
+                        product=", ".join(operators.keys()),
+                        _type="operator",
+                        trigger_dict=trigger_dict,
+                        ci=_job_dict["ci"],
+                        logger=logger,
+                        config_data=config_data,
+                    )
+                except AddonsWebhookTriggerError:
+                    failed_triggered_jobs.setdefault(_job_dict["ci"], []).append(_job_name)
+                    continue
+    return failed_triggered_jobs
 
 
 def run_iib_update(logger):
     slack_errors_webhook_url = None
     while True:
         try:
-            fetch_update_iib_and_trigger_jobs(logger=logger)
+            failed_triggered_jobs = fetch_update_iib_and_trigger_jobs(logger=logger)
+            if failed_triggered_jobs:
+                logger.info(f"Failed triggered jobs: {failed_triggered_jobs}")
+
         except Exception as ex:
             err_msg = f"Fail to run run_iib_update function. {ex}"
             logger.error(err_msg)
@@ -172,4 +182,4 @@ def run_iib_update(logger):
 
         finally:
             logger.info("Done check for new operators IIB, sleeping for 1 day")
-            sleep(60 * 60 * 24)
+            sleep(DAYS_TO_SECONDS)

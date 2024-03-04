@@ -4,6 +4,7 @@ import time
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
 from semver import Version
 
+from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
 from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
 
@@ -101,10 +102,9 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
 def monitor_and_trigger(logger):
     while True:
         try:
-            sleep_interval = 60 * 60 * 24  # 1 day
             process_and_trigger_jobs(logger=logger)
-            logger.info(f"Sleeping for {int(sleep_interval / 3600)} hours")
-            time.sleep(sleep_interval)
+            logger.info(f"Sleeping for {int(DAYS_TO_SECONDS / 3600)} hours")
+            time.sleep(DAYS_TO_SECONDS)
 
         except Exception as ex:
             logger.warnning(f"Error: {ex}")

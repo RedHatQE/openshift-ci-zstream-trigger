@@ -67,8 +67,11 @@ def openshift_ci_job_re_trigger():
 def process():
     try:
         hook_data = request.json
-        APP.logger.info(f"{hook_data['repository']['name']}: Event type: {hook_data['event_type']}")
-        return process_hook(data=hook_data, logger=APP.logger)
+        repository_name = hook_data["repository"]["name"]
+        APP.logger.info(f"{repository_name}: Event type: {hook_data['event_type']}")
+        failed_triggered_jobs = process_hook(data=hook_data, logger=APP.logger)
+        if failed_triggered_jobs:
+            APP.logger.error(f"{repository_name}: Failed triggered jobs: {failed_triggered_jobs}")
     except Exception as ex:
         return process_webhook_exception(
             logger=APP.logger,

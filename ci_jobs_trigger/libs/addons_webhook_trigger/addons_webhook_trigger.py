@@ -3,8 +3,7 @@ import re
 import gitlab
 
 from ci_jobs_trigger.libs.utils.general import trigger_ci_job
-from ci_jobs_trigger.utils.general import get_config
-
+from ci_jobs_trigger.utils.general import get_config, AddonsWebhookTriggerError
 
 ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR = "ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG"
 
@@ -63,26 +62,36 @@ def process_hook(data, logger, config_dict=None):
             logger.info(f"{_project}: No job found for product: {_addon}")
             return False
 
+        failed_triggered_jobs = {}
         for _job in _openshift_ci_jobs:
-            trigger_ci_job(
-                job=_job,
-                product=_addon,
-                _type="addon",
-                ci=openshift_ci,
-                config_data=_config_data,
-                logger=_logger,
-            )
+            try:
+                trigger_ci_job(
+                    job=_job,
+                    product=_addon,
+                    _type="addon",
+                    ci=openshift_ci,
+                    config_data=_config_data,
+                    logger=_logger,
+                )
+            except AddonsWebhookTriggerError:
+                failed_triggered_jobs.setdefault(openshift_ci, []).append(_job)
+                continue
 
         for _job in _jenkins_ci_jobs:
-            trigger_ci_job(
-                job=_job,
-                product=_addon,
-                _type="addon",
-                ci=jenkins_ci,
-                config_data=_config_data,
-                logger=_logger,
-            )
-        return True
+            try:
+                trigger_ci_job(
+                    job=_job,
+                    product=_addon,
+                    _type="addon",
+                    ci=jenkins_ci,
+                    config_data=_config_data,
+                    logger=_logger,
+                )
+            except AddonsWebhookTriggerError:
+                failed_triggered_jobs.setdefault(jenkins_ci, []).append(_job)
+                continue
+
+        return failed_triggered_jobs
 
     object_attributes = data["object_attributes"]
     if object_attributes.get("action") == "merge":
