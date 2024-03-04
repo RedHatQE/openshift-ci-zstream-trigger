@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import shutil
@@ -48,19 +49,20 @@ def get_operator_data_from_url(operator_name, ocp_version, logger):
 def get_new_iib(operator_config_data, logger):
     new_trigger_data = False
     data_from_file = read_data_file()
+    new_data = copy.deepcopy(data_from_file)
     ci_jobs = operator_config_data.get("ci_jobs", {})
 
     for _ocp_version, _jobs_data in ci_jobs.items():
         if _jobs_data:
-            for openshift_ci_job in [*_jobs_data["jobs"]]:
-                job_name = openshift_ci_job["name"]
-                job_products = openshift_ci_job["products"]
-                data_from_file.setdefault(_ocp_version, {}).setdefault(job_name, {})
-                data_from_file[_ocp_version][job_name]["operators"] = {}
-                data_from_file[_ocp_version][job_name]["ci"] = openshift_ci_job["ci"]
+            for _ci_job in [*_jobs_data["jobs"]]:
+                job_name = _ci_job["name"]
+                job_products = _ci_job["products"]
+                new_data.setdefault(_ocp_version, {}).setdefault(job_name, {})
+                new_data[_ocp_version][job_name]["operators"] = {}
+                new_data[_ocp_version][job_name]["ci"] = _ci_job["ci"]
                 for _operator, _operator_name in job_products.items():
-                    data_from_file[_ocp_version][job_name]["operators"].setdefault(_operator_name, {})
-                    _operator_data = data_from_file[_ocp_version][job_name]["operators"][_operator_name]
+                    new_data[_ocp_version][job_name]["operators"].setdefault(_operator_name, {})
+                    _operator_data = new_data[_ocp_version][job_name]["operators"][_operator_name]
                     _operator_data["triggered"] = False
                     logger.info(f"Parsing new IIB data for {_operator_name}")
                     for iib_data in get_operator_data_from_url(
@@ -87,11 +89,11 @@ def get_new_iib(operator_config_data, logger):
             logger.info(f"Done parsing new IIB data for {_jobs_data}")
 
     if new_trigger_data:
-        logger.info(f"New IIB data found: {data_from_file}")
+        logger.info(f"New IIB data found: {new_data}\nOld IIB data: {data_from_file}")
         with open(OPERATORS_DATA_FILE, "w") as fd:
-            fd.write(json.dumps(data_from_file))
+            fd.write(json.dumps(new_data))
 
-    return data_from_file
+    return new_data
 
 
 def clone_repo(repo_url):
