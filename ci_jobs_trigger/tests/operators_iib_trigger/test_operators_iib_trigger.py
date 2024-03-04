@@ -36,28 +36,24 @@ def config_dict(tmp_path_factory):
         "jenkins_username": "user",
         "jenkins_url": "https://jenkins",
         "ci_jobs": {
-            "v4.15": {
-                "jobs": [
-                    {
-                        "name": "openshift-ci-job-name",
-                        "ci": "openshift-ci",
-                        "products": {
-                            "product": "operator",
-                        },
-                    }
-                ],
-                "v4.15": {
-                    "jobs": [
-                        {
-                            "name": "jenkins-job-name",
-                            "ci": "jenkins",
-                            "products": {
-                                "product": "operator",
-                            },
-                        }
-                    ]
-                },
-            }
+            "v4.15": [
+                {
+                    "name": "openshift-ci-job-name",
+                    "ci": "openshift-ci",
+                    "products": {
+                        "product": "operator",
+                    },
+                }
+            ],
+            "v4.16": [
+                {
+                    "name": "jenkins-job-name",
+                    "ci": "jenkins",
+                    "products": {
+                        "product": "operator",
+                    },
+                }
+            ],
         },
     }
 

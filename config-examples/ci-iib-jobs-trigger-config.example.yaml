@@ -14,19 +14,17 @@ slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>
 
 ci_jobs:
-  <openshift version>:
-    jobs:
+  <openshift version 1>:
       - name: <openshift-ci job name>
         ci: openshift-ci
         products:
           <product name 1>: <operator name 1>
           <product name 2>: <operator name 2>
 
-
-    <openshift version>:
-      jobs:
-        - name: <jenkins job name>
-          ci: jenkins
-          products:
-            <product name 1>: <operator name 1>
-            <product name 2>: <operator name 2>
+  <openshift version 2>:
+    jobs:
+      - name: <jenkins job name>
+        ci: jenkins
+        products:
+          <product name 1>: <operator name 1>
+          <product name 2>: <operator name 2>
