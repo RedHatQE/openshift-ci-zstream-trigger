@@ -58,8 +58,8 @@ def get_new_iib(config_data, logger):
                 job_name = _ci_job["name"]
                 job_products = _ci_job["products"]
                 new_data.setdefault(_ocp_version, {}).setdefault(job_name, {})
-                new_data[_ocp_version][job_name]["operators"] = {}
-                new_data[_ocp_version][job_name]["ci"] = _ci_job["ci"]
+                new_data[_ocp_version][job_name].setdefault("operators", {})
+                new_data[_ocp_version][job_name].setdefault("ci", _ci_job["ci"])
                 for _operator, _operator_name in job_products.items():
                     new_data[_ocp_version][job_name]["operators"].setdefault(_operator_name, {})
                     _operator_data = new_data[_ocp_version][job_name]["operators"][_operator_name]
@@ -111,6 +111,7 @@ def change_directory(directory, logger):
 
 
 def push_changes(repo_url, slack_webhook_url, logger):
+    has_changes = False
     logger.info(f"Check if {OPERATORS_DATA_FILE} was changed")
     with change_directory(directory=LOCAL_REPO_PATH, logger=logger):
         try:
@@ -120,6 +121,7 @@ def push_changes(repo_url, slack_webhook_url, logger):
             os.system("pre-commit install")
 
             if OPERATORS_DATA_FILE_NAME in _git_repo.git.status():
+                has_changes = True
                 logger.info(f"Found changes for {OPERATORS_DATA_FILE_NAME}, pushing new changes")
                 logger.info(f"Run pre-commit on {OPERATORS_DATA_FILE_NAME}")
                 os.system(f"pre-commit run --files {OPERATORS_DATA_FILE_NAME}")
@@ -135,7 +137,7 @@ def push_changes(repo_url, slack_webhook_url, logger):
             logger.error(err_msg)
             send_slack_message(message=err_msg, webhook_url=slack_webhook_url, logger=logger)
 
-    logger.info(f"Done check if {OPERATORS_DATA_FILE} was changed")
+    logger.info(f"Done check if {OPERATORS_DATA_FILE} was changed. was changed: {has_changes}")
 
 
 def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
