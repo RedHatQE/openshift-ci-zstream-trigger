@@ -1,0 +1,13 @@
+trigger_token: <openshift-ci trigger token>
+slack_webhook_url: <slack webhook url to post job status>
+slack_errors_webhook_url: <slack webhook url to post code errors>
+
+versions:
+  "4.13":
+    - <openshift-ci-test-name-1>
+    - <openshift-ci-test-name-2>
+    - <openshift-ci-test-name-3>
+  "4.12":
+    - <openshift-ci-test-name-1>
+    - <openshift-ci-test-name-2>
+    - <openshift-ci-test-name-3>

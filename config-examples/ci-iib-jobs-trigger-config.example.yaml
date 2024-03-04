@@ -1,0 +1,25 @@
+trigger_token: <openshift-ci trigger token>
+github_token: <Github token>
+jenkins_token: <jenkins token>
+jenkins_username: <jenkins username>
+jenkins_url: <jenkins url>
+slack_webhook_url: <slack webhook url to post job status>
+slack_errors_webhook_url: <slack webhook url to post code errors>
+
+ci_jobs:
+  <openshift version>:
+    jobs:
+      - name: <openshift-ci job name>
+        ci: openshift-ci
+        products:
+          <product name 1>: <operator name 1>
+          <product name 2>: <operator name 2>
+
+
+    <openshift version>:
+      jobs:
+        - name: <jenkins job name>
+          ci: jenkins
+          products:
+            <product name 1>: <operator name 1>
+            <product name 2>: <operator name 2>

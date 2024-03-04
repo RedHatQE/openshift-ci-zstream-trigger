@@ -8,42 +8,9 @@ from gitlab.v4.objects import ProjectManager, ProjectMergeRequestManager
 from simple_logger.logger import get_logger
 
 from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import process_hook
+from ci_jobs_trigger.tests.utils import MockRequestPost, MockJenkinsJob, MockJenkinsBuild
 
 LOGGER = get_logger("test_addons_webhook_trigger")
-
-
-class MockRequest:
-    @property
-    def ok(self):
-        return True
-
-    @staticmethod
-    def json():
-        return {"id": 123456}
-
-
-class MockJenkinsJob:
-    @staticmethod
-    def get_parameters():
-        return []
-
-    @staticmethod
-    def build(parameters=None):
-        return MockJenkinsBuild()
-
-
-class MockJenkinsBuild:
-    @staticmethod
-    def exists():
-        return True
-
-    @staticmethod
-    def get_build():
-        return MockJenkinsBuild()
-
-    @property
-    def url(self):
-        return "https://test-jenkins-url"
 
 
 class MockGitlabProjectManager:
@@ -120,7 +87,7 @@ def test_process_hook(mocker, webhook_data, config_dict):
     mocker.patch.object(ProjectManager, "get", return_value=MockGitlabProjectManager())
     mocker.patch.object(ProjectMergeRequestManager, "get", return_value=MockProjectMergeRequestManager())
 
-    mocker.patch.object(requests, "post", return_value=MockRequest())
+    mocker.patch.object(requests, "post", return_value=MockRequestPost())
     mocker.patch.object(Jenkins, "get_job", return_value=MockJenkinsJob())
     mocker.patch.object(Project, "build", return_value=MockJenkinsBuild())
 

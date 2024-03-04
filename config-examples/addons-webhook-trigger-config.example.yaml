@@ -1,0 +1,22 @@
+trigger_token: <openshift-ci trigger token>
+jenkins_token: <jenkins token>
+jenkins_username: <jenkins username>
+jenkins_url: <jenkins url>
+slack_webhook_url: <slack webhook url to post job status>
+slack_errors_webhook_url: <slack webhook url to post code errors>
+
+repositories:
+  managed-tenants:
+    name: service/managed-tenants
+    gitlab_url: <gitlab url>
+    gitlab_token: <gitlab token>
+    products_jobs_mapping:
+      openshift-ci:
+        <addon name>:
+          <ocm env>:
+            - <openshift-ci job name>
+
+      jenkins:
+        <addon name>:
+          <ocm env>:
+            - <jenkins job name>

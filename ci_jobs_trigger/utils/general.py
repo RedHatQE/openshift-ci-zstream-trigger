@@ -30,8 +30,8 @@ def get_config(os_environ, logger, config_dict=None):
     try:
         with open(os.environ.get(os_environ)) as fd:
             return yaml.safe_load(fd)
-    except Exception:
-        logger.error(f"Failed to get config from {os_environ}")
+    except Exception as ex:
+        logger.error(f"Failed to get config from {os_environ}. error: {ex}")
         return {}
 
 
