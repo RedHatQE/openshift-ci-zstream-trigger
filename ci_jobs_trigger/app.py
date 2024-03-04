@@ -64,7 +64,7 @@ def openshift_ci_job_re_trigger():
 
 
 @APP.route("/addons-trigger", methods=["POST"])
-def process():
+def process_addons_trigger():
     try:
         hook_data = request.json
         repository_name = hook_data["repository"]["name"]
@@ -72,6 +72,8 @@ def process():
         failed_triggered_jobs = process_hook(data=hook_data, logger=APP.logger)
         if failed_triggered_jobs:
             APP.logger.error(f"{repository_name}: Failed triggered jobs: {failed_triggered_jobs}")
+
+        return "Processed done"
     except Exception as ex:
         return process_webhook_exception(
             logger=APP.logger,
