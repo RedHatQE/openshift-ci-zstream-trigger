@@ -8,6 +8,9 @@ def jenkins_trigger_job(job, config_data):
         verify=False,
     )
     job = api.get_job(full_name=job)
+    if not job:
+        return False, None
+
     job_params = {}
     for param in job.get_parameters():
         job_params[param["defaultParameterValue"]["name"]] = param["defaultParameterValue"]["value"]
