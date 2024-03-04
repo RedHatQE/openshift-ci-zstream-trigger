@@ -10,7 +10,6 @@ repositories:
     name: service/managed-tenants
     gitlab_url: <gitlab url>
     gitlab_token: <gitlab token>
-    slack_webhook_url: <slack webhook url to post job status>
     products_jobs_mapping:
       openshift-ci:
         <addon name>:
