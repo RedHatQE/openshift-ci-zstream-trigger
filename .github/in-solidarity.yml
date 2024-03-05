@@ -10,5 +10,4 @@ rules:
 ignore:
  - ".github/in-solidarity.yml"  # default
  - ".github/workflows/*.yml"
- - "**/*.yml"
- - "app/manifests/install-config-template.j2"
+ - "ci_jobs_trigger/libs/openshift_ci/re_trigger/README.md"

@@ -3,7 +3,7 @@ IMAGE_TAG ?= "latest"
 IMAGE_REPOSITORY ?= "quay.io/redhat_msi/ci-jobs-trigger"
 
 tests:
-	poetry install && tox
+	tox
 
 build:
 	$(IMAGE_BUILD_CMD) build . -t $(IMAGE_REPOSITORY):$(IMAGE_TAG)

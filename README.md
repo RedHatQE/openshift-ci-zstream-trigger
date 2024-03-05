@@ -11,16 +11,17 @@ A Flask-based webhook server to trigger ci jobs.
 
 ## Build container
 
-Using podman:
-
 ```bash
-podman build -t ci-jobs-trigger .
+make build
 ```
 
-Using docker:
+## Push container
+
+- Write permissions to `quay.io/redhat_msi/ci-jobs-trigger` are needed
+- For testing, set `IMAGE_TAG` environment variable to relevant test tag name to not overwrite latest
 
 ```bash
-docker build -t ci-jobs-trigger .
+make push
 ```
 
 ## Development
@@ -69,8 +70,8 @@ pre-commit install
 pre-commit will try to fix the error.
 If some error where fixed git add & git commit is needed again.
 
-To run the tests and un-used code checks, run `tox`:
+To run the tests and un-used code checks:
 
 ```bash
-tox
+make tests
 ```
