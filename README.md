@@ -9,19 +9,23 @@ A Flask-based webhook server to trigger ci jobs.
 - [operators_iib_trigger](ci_jobs_trigger/libs/operators_iib_trigger) - Trigger ci job on new operator index image
 - [addons_webhook_trigger](ci_jobs_trigger/libs/addons_webhook_trigger) - Trigger ci job when a new addon is released
 
-## Build container
+## Build and push container
+
+- Default image tag is `latest`, to use a different one set `IMAGE_TAG=<tag>`
+- Default image quay repository is `quay.io/redhat_msi/ci-jobs-trigger`, to use a different one set `IMAGE_REPOSITORY=<repository>`
 
 ```bash
 make build
 ```
 
-## Push container
-
-- Write permissions to `quay.io/redhat_msi/ci-jobs-trigger` are needed
-- For testing, set `IMAGE_TAG` environment variable to relevant test tag name to not overwrite latest
-
 ```bash
 make push
+```
+
+- To build and push custom tag and/or repository
+
+```bash
+IMAGE_TAG="test-image" IMAGE_REPOSITORY="quay.io/my-repo" make push
 ```
 
 ## Development
@@ -49,6 +53,7 @@ poetry install
 export FLASK_DEBUG=1  # Optional; to output flask logs to console.
 export CI_JOBS_TRIGGER_PORT=5003  # Optional; to set a different port than 5000.
 export CI_JOBS_TRIGGER_USE_RELOAD=1  # Optional; to re-load configuration when code is saved.
+export CI_JOBS_TRIGGER_LISTEN_IP="0.0.0.0"  # Optional, to listen on all interfaces. Default is localhost only.
 
 poetry run python  ci_jobs_trigger/app.py
 ```
