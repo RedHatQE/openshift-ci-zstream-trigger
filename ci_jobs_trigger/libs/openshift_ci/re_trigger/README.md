@@ -5,6 +5,8 @@ Only periodic jobs can be re-triggered (openShift-ci API limitation).
 Re-triggering is done only if a job fails during setup (`pre phase`).  
 The job will be re-triggered only once.  
 
+For job configuration in openshift ci, refer to [job-re-trigger](https://github.com/openshift/release/blob/master/ci-operator/step-registry/job-re-trigger/job-re-trigger-ref.yaml)
+
 ## Supported platforms
 - openshift ci
 

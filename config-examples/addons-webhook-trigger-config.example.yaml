@@ -18,7 +18,7 @@ repositories:
     products_jobs_mapping:
       openshift-ci:
         <addon name>:
-          <ocm env>:
+          <ocm env>:  # stage or production
             - <openshift-ci job name>
 
       jenkins:

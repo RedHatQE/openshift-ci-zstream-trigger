@@ -1,6 +1,6 @@
 # ci-jobs-trigger
-A Flask-based webhook server to trigger ci jobs.
 
+A Flask-based webhook server to trigger ci jobs.
 
 ## Supported triggering flows:
 
@@ -58,7 +58,7 @@ Tests are located under [tests dir](ci_jobs_trigger/tests)
 
 ### Check the code
 
-We use checks tools that are defined in [pre-commit-config](.pre-commit-config.yaml)
+Code checks tools that are defined in [pre-commit-config](.pre-commit-config.yaml)
 To install pre-commit:
 
 ```bash
@@ -68,7 +68,6 @@ pre-commit install
 
 pre-commit will try to fix the error.
 If some error where fixed git add & git commit is needed again.
-commit-msg use gitlint (<https://jorisroovers.com/gitlint/>)
 
 To run the tests and un-used code checks, run `tox`:
 

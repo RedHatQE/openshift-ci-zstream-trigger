@@ -2,7 +2,7 @@
 
 A process which runs every 24 hours and checks for new Openshift z-stream.
 
-If a new version is available, relevant jobs will be triggered.
+If a new z-stream version is available, relevant jobs will be triggered.
 Only periodic jobs can be re-triggered (openShift-ci API limitation).
 
 ## Supported platforms
