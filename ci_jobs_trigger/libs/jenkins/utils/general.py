@@ -1,23 +1,50 @@
-from api4jenkins import Jenkins
+import jenkins
+from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
 
-def jenkins_trigger_job(job, config_data):
-    api = Jenkins(
+def jenkins_trigger_job(job, config_data, logger, operator_iib=False):
+    api = jenkins.Jenkins(
         url=config_data["jenkins_url"],
-        auth=(config_data["jenkins_username"], config_data["jenkins_token"]),
-        verify=False,
+        username=config_data["jenkins_username"],
+        password=config_data["jenkins_token"],
     )
-    job = api.get_job(full_name=job)
-    if not job:
-        return False, None
 
-    job_params = {}
-    for param in job.get_parameters():
-        job_params[param["defaultParameterValue"]["name"]] = param["defaultParameterValue"]["value"]
+    if not api.job_exists(name=job):
+        logger.error(f"Jenkins job {job} not found.")
+        return False, None
 
     try:
-        res = job.build(parameters=job_params)
-        build = res.get_build()
-        return build.exists(), build
-    except Exception:
-        return False, None
+        last_build_number = api.get_job_info(job)["lastBuild"]["number"]
+    except TypeError:
+        last_build_number = 0
+
+    api.build_job(name=job, parameters=set_job_params(api=api, job=job, operator_iib=operator_iib))
+
+    for job_info in TimeoutSampler(
+        wait_timeout=30,
+        sleep=1,
+        func=api.get_job_info,
+        name=job,
+    ):
+        try:
+            if (job_info_last_build := job_info["lastBuild"]) and job_info_last_build["number"] > last_build_number:
+                return True, job_info_last_build
+
+        except TimeoutExpiredError:
+            logger.error(f"Jenkins job {job} new build not triggered.")
+            return False, None
+
+
+def set_job_params(api, job, operator_iib):
+    job_params = {}
+    install_from_iib_job_param_str = "INSTALL_FROM_IIB"
+
+    for _property in api.get_job_info(name=job)["property"]:
+        for param in _property.get("parameterDefinitions", []):
+            if operator_iib and param["name"] == install_from_iib_job_param_str:
+                job_params[install_from_iib_job_param_str] = True
+                continue
+
+            job_params[param["defaultParameterValue"]["name"]] = param["defaultParameterValue"]["value"]
+
+    return job_params

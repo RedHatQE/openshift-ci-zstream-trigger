@@ -32,6 +32,7 @@ def trigger_ci_job(
     logger,
     config_data,
     trigger_dict=None,
+    operator_iib=False,
 ):
     openshift_ci_response = None
     logger.info(f"Triggering {ci} job for {product} [{_type}]: {job}")
@@ -45,7 +46,7 @@ def trigger_ci_job(
         res = openshift_ci_response.json() if rc else openshift_ci_response.text
 
     elif jenkins_ci:
-        rc, res = jenkins_trigger_job(job=job, config_data=config_data)
+        rc, res = jenkins_trigger_job(job=job, config_data=config_data, logger=logger, operator_iib=operator_iib)
 
     else:
         raise ValueError(f"Unknown ci: {ci}")
@@ -71,7 +72,7 @@ curl -X GET -d -H "Authorization: Bearer $OPENSHIFT_CI_TOKEN" {GANGWAY_API_URL}/
 
     elif jenkins_ci:
         openshift_ci_response = ""
-        status_info_command = res.url
+        status_info_command = res["url"]
 
     message = f"""
 ```

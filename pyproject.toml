@@ -36,9 +36,9 @@ flask = "^3.0.2"
 python-simple-logger = "^1.0.12"
 shortuuid = "^1.0.11"
 gitpython = "^3.1.42"
-api4jenkins = "^2.0.3"
 pygithub = "^2.2.0"
 python-gitlab = "^4.4.0"
+python-jenkins = "^1.8.2"
 
 
 [tool.poetry.group.dev.dependencies]

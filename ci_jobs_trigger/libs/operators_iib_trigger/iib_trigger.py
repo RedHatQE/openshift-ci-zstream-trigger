@@ -164,6 +164,7 @@ def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
                         ci=_job_dict["ci"],
                         logger=logger,
                         config_data=config_data,
+                        operator_iib=True,
                     )
                 except AddonsWebhookTriggerError:
                     failed_triggered_jobs.setdefault(_job_dict["ci"], []).append(_job_name)
