@@ -24,7 +24,7 @@ def jenkins_trigger_job(job, config_data, logger, operator_iib=False):
 
     api.build_job(name=job, parameters=set_job_params(api=api, job=job, operator_iib=operator_iib))
 
-    return wait_for_job_in_jenkins(api=api, job=job, last_build_number=last_build_number, logger=logger)
+    return wait_for_job_started_in_jenkins(api=api, job=job, last_build_number=last_build_number, logger=logger)
 
 
 def set_job_params(api, job, operator_iib):
@@ -33,16 +33,19 @@ def set_job_params(api, job, operator_iib):
 
     for _property in api.get_job_info(name=job)["property"]:
         for param in _property.get("parameterDefinitions", []):
-            if operator_iib and param["name"] == install_from_iib_job_param_str:
+            param_dict = param["defaultParameterValue"]
+            param_name = param_dict["name"]
+
+            if operator_iib and param_name == install_from_iib_job_param_str:
                 job_params[install_from_iib_job_param_str] = True
                 continue
 
-            job_params[param["defaultParameterValue"]["name"]] = param["defaultParameterValue"]["value"]
+            job_params[param_name] = param_dict["value"]
 
     return job_params
 
 
-def wait_for_job_in_jenkins(api, job, last_build_number, logger):
+def wait_for_job_started_in_jenkins(api, job, last_build_number, logger):
     for job_info in TimeoutSampler(
         wait_timeout=3,
         sleep=1,
