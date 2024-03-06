@@ -11,7 +11,11 @@ from git import Repo
 
 from ci_jobs_trigger.libs.utils.general import trigger_ci_job
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
-from ci_jobs_trigger.utils.general import send_slack_message, get_config, AddonsWebhookTriggerError
+from ci_jobs_trigger.utils.general import (
+    send_slack_message,
+    get_config,
+    AddonsWebhookTriggerError,
+)
 
 LOCAL_REPO_PATH = "/tmp/ci-jobs-trigger"
 OPERATORS_DATA_FILE_NAME = "operators-latest-iib.json"
@@ -173,7 +177,6 @@ def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
 
 
 def run_iib_update(logger):
-    slack_errors_webhook_url = None
     while True:
         try:
             failed_triggered_jobs = fetch_update_iib_and_trigger_jobs(logger=logger)
@@ -183,6 +186,9 @@ def run_iib_update(logger):
         except Exception as ex:
             err_msg = f"Fail to run run_iib_update function. {ex}"
             logger.error(err_msg)
+            slack_errors_webhook_url = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger).get(
+                "slack_errors_webhook_url"
+            )
             send_slack_message(message=err_msg, webhook_url=slack_errors_webhook_url, logger=logger)
 
         finally:

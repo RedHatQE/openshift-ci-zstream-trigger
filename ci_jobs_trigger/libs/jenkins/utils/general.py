@@ -1,8 +1,12 @@
+import os
+
 import jenkins
 from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
 
 def jenkins_trigger_job(job, config_data, logger, operator_iib=False):
+    os.environ["PYTHONHTTPSVERIFY"] = "0"
+
     api = jenkins.Jenkins(
         url=config_data["jenkins_url"],
         username=config_data["jenkins_username"],
