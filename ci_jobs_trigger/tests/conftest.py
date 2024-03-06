@@ -19,7 +19,7 @@ def functions_mocker(mocker):
     )
     mocker.patch("ci_jobs_trigger.libs.jenkins.utils.general.set_job_params", return_value={})
     mocker.patch(
-        "ci_jobs_trigger.libs.jenkins.utils.general.wait_for_job_in_jenkins",
+        "ci_jobs_trigger.libs.jenkins.utils.general.wait_for_job_started_in_jenkins",
         return_value=(True, {"url": "url"}),
     )
 
