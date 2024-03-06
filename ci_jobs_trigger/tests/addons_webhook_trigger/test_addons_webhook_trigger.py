@@ -1,14 +1,10 @@
 import pytest
-import requests
-from api4jenkins.job import Project
-from api4jenkins import Jenkins
 from gitlab import Gitlab
 from gitlab.v4.objects import ProjectManager, ProjectMergeRequestManager
 
 from simple_logger.logger import get_logger
 
 from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import process_hook
-from ci_jobs_trigger.tests.utils import MockRequestPost, MockJenkinsJob, MockJenkinsBuild
 
 LOGGER = get_logger("test_addons_webhook_trigger")
 
@@ -82,13 +78,9 @@ def config_dict(tmp_path_factory):
     }
 
 
-def test_process_hook(mocker, webhook_data, config_dict):
+def test_process_hook(mocker, functions_mocker, webhook_data, config_dict):
     mocker.patch.object(Gitlab, "auth", return_value=True)
     mocker.patch.object(ProjectManager, "get", return_value=MockGitlabProjectManager())
     mocker.patch.object(ProjectMergeRequestManager, "get", return_value=MockProjectMergeRequestManager())
-
-    mocker.patch.object(requests, "post", return_value=MockRequestPost())
-    mocker.patch.object(Jenkins, "get_job", return_value=MockJenkinsJob())
-    mocker.patch.object(Project, "build", return_value=MockJenkinsBuild())
 
     process_hook(data=webhook_data, logger=LOGGER, config_dict=config_dict)

@@ -20,19 +20,7 @@ def jenkins_trigger_job(job, config_data, logger, operator_iib=False):
 
     api.build_job(name=job, parameters=set_job_params(api=api, job=job, operator_iib=operator_iib))
 
-    for job_info in TimeoutSampler(
-        wait_timeout=30,
-        sleep=1,
-        func=api.get_job_info,
-        name=job,
-    ):
-        try:
-            if (job_info_last_build := job_info["lastBuild"]) and job_info_last_build["number"] > last_build_number:
-                return True, job_info_last_build
-
-        except TimeoutExpiredError:
-            logger.error(f"Jenkins job {job} new build not triggered.")
-            return False, None
+    return wait_for_job_in_jenkins(api=api, job=job, last_build_number=last_build_number, logger=logger)
 
 
 def set_job_params(api, job, operator_iib):
@@ -48,3 +36,19 @@ def set_job_params(api, job, operator_iib):
             job_params[param["defaultParameterValue"]["name"]] = param["defaultParameterValue"]["value"]
 
     return job_params
+
+
+def wait_for_job_in_jenkins(api, job, last_build_number, logger):
+    for job_info in TimeoutSampler(
+        wait_timeout=3,
+        sleep=1,
+        func=api.get_job_info,
+        name=job,
+    ):
+        try:
+            if (job_info_last_build := job_info["lastBuild"]) and job_info_last_build["number"] > last_build_number:
+                return True, job_info_last_build
+
+        except TimeoutExpiredError:
+            logger.error(f"Jenkins job {job} new build not triggered.")
+            return False, None

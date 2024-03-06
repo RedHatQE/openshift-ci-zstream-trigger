@@ -4,17 +4,21 @@ class MockJenkinsJob:
         return []
 
     @staticmethod
-    def build(parameters=None):
+    def build_job():
         return MockJenkinsBuild()
+
+    @staticmethod
+    def get_job_info(name="test-job"):
+        return {"lastBuild": {"number": 123456}}
+
+    @staticmethod
+    def job_exists():
+        return True
 
 
 class MockJenkinsBuild:
     @staticmethod
-    def exists():
-        return True
-
-    @staticmethod
-    def get_build():
+    def build_job():
         return MockJenkinsBuild()
 
     @property

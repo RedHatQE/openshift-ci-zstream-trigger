@@ -1,11 +1,10 @@
 import pytest
 import requests
-from api4jenkins import Jenkins
-from api4jenkins.job import Project
 from simple_logger.logger import get_logger
 
-from ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger import fetch_update_iib_and_trigger_jobs
-from ci_jobs_trigger.tests.utils import MockRequestPost, MockJenkinsJob, MockJenkinsBuild
+from ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger import (
+    fetch_update_iib_and_trigger_jobs,
+)
 
 LOGGER = get_logger("test_operators_iib_trigger")
 
@@ -58,13 +57,7 @@ def config_dict(tmp_path_factory):
     }
 
 
-def test_fetch_update_iib_and_trigger_jobs(mocker, config_dict):
+def test_fetch_update_iib_and_trigger_jobs(mocker, functions_mocker, config_dict):
     mocker.patch.object(requests, "get", return_value=MockRequestGet())
-
-    mocker.patch.object(requests, "post", return_value=MockRequestPost())
-    mocker.patch.object(Jenkins, "get_job", return_value=MockJenkinsJob())
-    mocker.patch.object(Project, "build", return_value=MockJenkinsBuild())
-
-    mocker.patch("ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger.push_changes", return_value=True)
 
     fetch_update_iib_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
