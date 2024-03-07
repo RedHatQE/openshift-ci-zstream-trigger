@@ -107,4 +107,4 @@ def monitor_and_trigger(logger):
             time.sleep(DAYS_TO_SECONDS)
 
         except Exception as ex:
-            logger.warnning(f"Error: {ex}")
+            logger.warning(f"Error: {ex}")
