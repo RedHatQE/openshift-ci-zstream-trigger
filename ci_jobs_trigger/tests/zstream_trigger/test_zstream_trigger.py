@@ -17,16 +17,27 @@ TRIGGER_JOBS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.trigger_jobs"
 
 
 @pytest.fixture()
-def config_dict(tmp_path_factory):
+def base_config_dict(tmp_path_factory):
     return {
         "trigger_token": "123456",
         "slack_webhook_url": "https://webhook",
         "slack_errors_webhook_url": "https://webhook-error",
         "processed_versions_file_path": tmp_path_factory.getbasetemp() / "processed_versions.json",
-        "versions": {
-            "4.13": ["<openshift-ci-test-name-4.13>"],
-        },
     }
+
+
+@pytest.fixture()
+def config_dict(base_config_dict):
+    base_config_dict["versions"] = {
+        "4.13": ["<openshift-ci-test-name-4.13>"],
+    }
+    return base_config_dict
+
+
+@pytest.fixture()
+def config_dict_no_versions(base_config_dict):
+    base_config_dict["versions"] = {}
+    return base_config_dict
 
 
 def test_process_and_trigger_jobs_no_config():
@@ -34,6 +45,10 @@ def test_process_and_trigger_jobs_no_config():
         pytest.xfail(f"{OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR} is set")
 
     assert not process_and_trigger_jobs(logger=LOGGER)
+
+
+def test_process_and_trigger_jobs_config_with_no_versions(config_dict_no_versions):
+    assert not process_and_trigger_jobs(config_dict=config_dict_no_versions, logger=LOGGER)
 
 
 def test_process_and_trigger_jobs(mocker, config_dict):
