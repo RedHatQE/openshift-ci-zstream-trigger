@@ -40,6 +40,12 @@ def config_dict_no_versions(base_config_dict):
     return base_config_dict
 
 
+@pytest.fixture()
+def config_dict_empty_version(base_config_dict):
+    base_config_dict["versions"] = {"4.15": None}
+    return base_config_dict
+
+
 def test_process_and_trigger_jobs_no_config():
     if os.environ.get(OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR):
         pytest.xfail(f"{OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR} is set")
@@ -49,6 +55,10 @@ def test_process_and_trigger_jobs_no_config():
 
 def test_process_and_trigger_jobs_config_with_no_versions(config_dict_no_versions):
     assert not process_and_trigger_jobs(config_dict=config_dict_no_versions, logger=LOGGER)
+
+
+def test_process_and_trigger_jobs_config_with_empty_version(config_dict_empty_version):
+    assert not process_and_trigger_jobs(config_dict=config_dict_empty_version, logger=LOGGER)
 
 
 def test_process_and_trigger_jobs(mocker, config_dict):
