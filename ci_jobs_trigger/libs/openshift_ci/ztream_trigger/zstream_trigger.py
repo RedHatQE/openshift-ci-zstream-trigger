@@ -67,7 +67,9 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
         return False
 
     stable_versions = get_accepted_cluster_versions()["stable"]
-    versions_from_config = config["versions"]
+    if versions_from_config := (not config.get("versions")):
+        logger.warning("No versions found in config.yaml")
+        return False
 
     if version:
         version_from_config = versions_from_config.get(version)
