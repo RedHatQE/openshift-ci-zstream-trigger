@@ -51,7 +51,7 @@ To run locally you can export the following environment variables:
 poetry install
 
 export FLASK_DEBUG=1  # Optional; to output flask logs to console.
-export CI_JOBS_TRIGGER_PORT=5003  # Optional; to set a different port than 5000.
+export CI_JOBS_TRIGGER_LISTEN_PORT=5003  # Optional; to set a different port than 5000.
 export CI_JOBS_TRIGGER_USE_RELOAD=1  # Optional; to re-load configuration when code is saved.
 export CI_JOBS_TRIGGER_LISTEN_IP="0.0.0.0"  # Optional, to listen on all interfaces. Default is localhost only.
 

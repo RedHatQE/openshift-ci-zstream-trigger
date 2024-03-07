@@ -96,7 +96,7 @@ if __name__ == "__main__":
     )
     APP.logger.info(f"Starting {APP.name} app")
     APP.run(
-        port=int(os.environ.get("CI_JOBS_TRIGGER_PORT", 5000)),
+        port=int(os.environ.get("CI_JOBS_TRIGGER_LISTEN_PORT", 5000)),
         host=os.environ.get("CI_JOBS_TRIGGER_LISTEN_IP", "127.0.0.1"),
         use_reloader=True if os.environ.get("CI_JOBS_TRIGGER_USE_RELOAD") else False,
     )
