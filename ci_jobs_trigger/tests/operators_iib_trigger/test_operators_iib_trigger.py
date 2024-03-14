@@ -30,7 +30,6 @@ class MockRequestGet:
 def base_config_dict():
     return {
         "trigger_token": "token",
-        "github_token": "token",
         "jenkins_token": "token",
         "jenkins_username": "user",
         "jenkins_url": "https://jenkins",

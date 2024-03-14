@@ -40,6 +40,7 @@ pygithub = "^2.2.0"
 python-gitlab = "^4.4.0"
 python-jenkins = "^1.8.2"
 redhat-qe-cloud-tools = "^1.0.47"
+pyaml-env = "^1.2.1"
 
 
 [tool.poetry.group.dev.dependencies]

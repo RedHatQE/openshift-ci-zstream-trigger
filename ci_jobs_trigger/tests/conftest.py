@@ -13,10 +13,6 @@ def functions_mocker(mocker):
     mocker.patch.object(jenkins.Jenkins, "job_exists", return_value=MockJenkinsJob())
     mocker.patch.object(jenkins.Jenkins, "build_job", return_value=MockJenkinsBuild())
 
-    mocker.patch(
-        "ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger.push_changes",
-        return_value=True,
-    )
     mocker.patch("ci_jobs_trigger.libs.jenkins.utils.general.set_job_params", return_value={})
     mocker.patch(
         "ci_jobs_trigger.libs.jenkins.utils.general.wait_for_job_started_in_jenkins",

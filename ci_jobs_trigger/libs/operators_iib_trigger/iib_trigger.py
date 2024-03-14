@@ -1,7 +1,9 @@
 import copy
 import json
 import os
+import tempfile
 from json import JSONDecodeError
+from pathlib import Path
 from time import sleep
 
 import requests
@@ -15,9 +17,6 @@ from ci_jobs_trigger.utils.general import (
 )
 from clouds.aws.session_clients import s3_client
 
-LOCAL_REPO_PATH = "/tmp/ci-jobs-trigger"
-OPERATORS_DATA_FILE_NAME = "operators-latest-iib.json"
-OPERATORS_DATA_FILE = os.path.join(LOCAL_REPO_PATH, OPERATORS_DATA_FILE_NAME)
 LOG_PREFIX = "iib-trigger:"
 
 
@@ -38,6 +37,38 @@ def get_operator_data_from_url(operator_name, ocp_version, logger):
         _index = raw_msg["msg"]["index"]
         if _index["ocp_version"] == ocp_version:
             yield _index
+
+
+def upload_download_s3_bucket_file(action, filename, s3_bucket_file_full_path, region, logger):
+    bucket, key = s3_bucket_file_full_path.split("/", 1)
+    client = s3_client(region_name=region)
+
+    if action == "upload":
+        logger.info(f"{LOG_PREFIX} Uploading IIB file to s3 {s3_bucket_file_full_path}")
+        client.upload_file(Filename=filename, Bucket=bucket, Key=key)
+
+    elif action == "download":
+        logger.info(f"{LOG_PREFIX} Downloading IIB file from s3 {s3_bucket_file_full_path}")
+        client.download_file(Bucket=bucket, Key=key, Filename=filename)
+
+
+def write_new_data_to_file(config_data, new_data, logger):
+    iib_file = config_data.get(
+        "operators_latest_iib_filepath",
+        config_data.get("local_operators_latest_iib_filepath"),
+    )
+
+    with open(iib_file, "w") as fd:
+        fd.write(json.dumps(new_data))
+
+    if s3_bucket_operators_latest_iib_path := config_data.get("s3_bucket_operators_latest_iib_path"):
+        upload_download_s3_bucket_file(
+            action="upload",
+            filename=iib_file,
+            s3_bucket_file_full_path=s3_bucket_operators_latest_iib_path,
+            region=config_data["aws_region"],
+            logger=logger,
+        )
 
 
 def get_new_iib(config_data, logger, iib_data):
@@ -85,48 +116,69 @@ def get_new_iib(config_data, logger, iib_data):
 
     if new_trigger_data:
         logger.info(f"{LOG_PREFIX} New IIB data found: {new_data}\nOld IIB data: {iib_data}")
-        with open(OPERATORS_DATA_FILE, "w") as fd:
-            fd.write(json.dumps(new_data))
+
+        write_new_data_to_file(config_data=config_data, new_data=new_data, logger=logger)
 
     return new_data
 
 
 def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_region, slack_errors_webhook_url, logger):
     if not aws_region:
+        error_msg = "aws_region is required if s3_bucket_operators_latest_iib_path is set"
+        logger.error(f"{LOG_PREFIX} {error_msg}")
         send_slack_message(
-            message="aws_region is required if s3_bucket_operators_latest_iib_path is set",
+            message=error_msg,
             webhook_url=slack_errors_webhook_url,
             logger=logger,
         )
         return False
 
-    bucket, key = s3_bucket_operators_latest_iib_path.split("/", 1)
-    target_file_path = os.path.join("tmp", key)
-    s3_client(region_name=aws_region).download_file(Bucket=bucket, Key=key, Filename=target_file_path)
+    try:
+        s3_target_path = os.path.join("/", "tmp", "ci-jobs-trigger-s3")
+        Path(s3_target_path).mkdir(parents=True, exist_ok=True)
+        target_file_path = os.path.join(s3_target_path, "operators_latest_iib.json")
 
-    return target_file_path
+        upload_download_s3_bucket_file(
+            action="download",
+            filename=target_file_path,
+            s3_bucket_file_full_path=s3_bucket_operators_latest_iib_path,
+            region=aws_region,
+            logger=logger,
+        )
+
+        return target_file_path
+
+    except Exception as ex:
+        logger.error(
+            "Failed to download IIB file from s3_bucket_operators_latest_iib_path: "
+            f"{s3_bucket_operators_latest_iib_path}. error: {ex}"
+        )
+        return False
+
+
+def local_iib_filepath(logger):
+    maketemp_dir = tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")
+    logger.info(f"{LOG_PREFIX} Created temp dir: {maketemp_dir}")
+
+    return os.path.join(maketemp_dir, "operators_latest_iib.json")
 
 
 def iib_data_filepath(config_data, logger):
-    slack_errors_webhook_url = config_data.get("slack_errors_webhook_url")
     if s3_bucket_operators_latest_iib_path := config_data.get("s3_bucket_operators_latest_iib_path"):
         return download_iib_file_from_s3_bucket(
             s3_bucket_operators_latest_iib_path=s3_bucket_operators_latest_iib_path,
             aws_region=config_data.get("aws_region"),
-            slack_errors_webhook_url=slack_errors_webhook_url,
+            slack_errors_webhook_url=config_data.get("slack_errors_webhook_url"),
             logger=logger,
         )
 
     elif target_file_path := config_data.get("operators_latest_iib_filepath"):
         return target_file_path
 
-    raise ValueError(
-        "Either s3_bucket_operators_latest_iib_path or operators_latest_iib_filepath must be set in config"
-    )
 
-
-def get_new_iib_data(config_data, logger):
-    target_file_path = iib_data_filepath(config_data=config_data, logger=logger)
+def get_iib_data_from_file(config_data, logger):
+    if not (target_file_path := iib_data_filepath(config_data=config_data, logger=logger)):
+        return {}
 
     try:
         with open(target_file_path) as fd:
@@ -137,11 +189,17 @@ def get_new_iib_data(config_data, logger):
 
 
 def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
+    # TODO:
+    # decide what to do if both local and s3 are set
+    # how to use the same temp local file during loops
     logger.info(f"{LOG_PREFIX} Check for new operators IIB")
     config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
 
-    iib_data = get_new_iib_data(config_data=config_data, logger=logger)
-    trigger_dict = get_new_iib(config_data=config_data, logger=logger, iib_data=iib_data)
+    if config_data.get("s3_bucket_operators_latest_iib_path") or not config_data.get("operators_latest_iib_filepath"):
+        config_data["local_operators_latest_iib_filepath"] = local_iib_filepath(logger=logger)
+
+    iib_data_from_file = get_iib_data_from_file(config_data=config_data, logger=logger)
+    trigger_dict = get_new_iib(config_data=config_data, logger=logger, iib_data=iib_data_from_file)
 
     failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():

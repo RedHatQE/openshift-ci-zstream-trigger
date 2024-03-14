@@ -3,7 +3,7 @@ import os
 from multiprocessing import Process
 
 import requests
-import yaml
+from pyaml_env import parse_config
 
 
 class AddonsWebhookTriggerError(Exception):
@@ -28,8 +28,7 @@ def get_config(os_environ, logger, config_dict=None):
         return config_dict
 
     try:
-        with open(os.environ.get(os_environ)) as fd:
-            return yaml.safe_load(fd)
+        return parse_config(path=os.environ.get(os_environ), default_value="")
     except Exception as ex:
         logger.error(f"Failed to get config from {os_environ}. error: {ex}")
         return {}
