@@ -1,13 +1,10 @@
 import copy
 import json
 import os
-import shutil
-from contextlib import contextmanager
 from json import JSONDecodeError
 from time import sleep
 
 import requests
-from git import Repo
 
 from ci_jobs_trigger.libs.utils.general import trigger_ci_job
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
@@ -16,20 +13,12 @@ from ci_jobs_trigger.utils.general import (
     get_config,
     AddonsWebhookTriggerError,
 )
+from clouds.aws.session_clients import s3_client
 
 LOCAL_REPO_PATH = "/tmp/ci-jobs-trigger"
 OPERATORS_DATA_FILE_NAME = "operators-latest-iib.json"
 OPERATORS_DATA_FILE = os.path.join(LOCAL_REPO_PATH, OPERATORS_DATA_FILE_NAME)
 LOG_PREFIX = "iib-trigger:"
-
-
-def read_data_file():
-    try:
-        with open(OPERATORS_DATA_FILE, "r") as fd:
-            return json.load(fd)
-
-    except (FileNotFoundError, JSONDecodeError):
-        return {}
 
 
 def get_operator_data_from_url(operator_name, ocp_version, logger):
@@ -51,10 +40,9 @@ def get_operator_data_from_url(operator_name, ocp_version, logger):
             yield _index
 
 
-def get_new_iib(config_data, logger):
+def get_new_iib(config_data, logger, iib_data):
     new_trigger_data = False
-    data_from_file = read_data_file()
-    new_data = copy.deepcopy(data_from_file)
+    new_data = copy.deepcopy(iib_data)
     if (ci_jobs := config_data.get("ci_jobs", {})) is None:
         logger.error(f"{LOG_PREFIX} No ci_jobs found in config")
         return {}
@@ -96,66 +84,64 @@ def get_new_iib(config_data, logger):
             logger.info(f"{LOG_PREFIX} Done parsing new IIB data for {_jobs_data}")
 
     if new_trigger_data:
-        logger.info(f"{LOG_PREFIX} New IIB data found: {new_data}\nOld IIB data: {data_from_file}")
+        logger.info(f"{LOG_PREFIX} New IIB data found: {new_data}\nOld IIB data: {iib_data}")
         with open(OPERATORS_DATA_FILE, "w") as fd:
             fd.write(json.dumps(new_data))
 
     return new_data
 
 
-def clone_repo(repo_url):
-    shutil.rmtree(path=LOCAL_REPO_PATH, ignore_errors=True)
-    Repo.clone_from(url=repo_url, to_path=LOCAL_REPO_PATH)
+def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_region, slack_errors_webhook_url, logger):
+    if not aws_region:
+        send_slack_message(
+            message="aws_region is required if s3_bucket_operators_latest_iib_path is set",
+            webhook_url=slack_errors_webhook_url,
+            logger=logger,
+        )
+        return False
+
+    bucket, key = s3_bucket_operators_latest_iib_path.split("/", 1)
+    target_file_path = os.path.join("tmp", key)
+    s3_client(region_name=aws_region).download_file(Bucket=bucket, Key=key, Filename=target_file_path)
+
+    return target_file_path
 
 
-@contextmanager
-def change_directory(directory, logger):
-    logger.info(f"{LOG_PREFIX} Changing directory to {directory}")
-    old_cwd = os.getcwd()
-    yield os.chdir(directory)
-    logger.info(f"{LOG_PREFIX} Changing back to directory {old_cwd}")
-    os.chdir(old_cwd)
+def iib_data_filepath(config_data, logger):
+    slack_errors_webhook_url = config_data.get("slack_errors_webhook_url")
+    if s3_bucket_operators_latest_iib_path := config_data.get("s3_bucket_operators_latest_iib_path"):
+        return download_iib_file_from_s3_bucket(
+            s3_bucket_operators_latest_iib_path=s3_bucket_operators_latest_iib_path,
+            aws_region=config_data.get("aws_region"),
+            slack_errors_webhook_url=slack_errors_webhook_url,
+            logger=logger,
+        )
+
+    elif target_file_path := config_data.get("operators_latest_iib_filepath"):
+        return target_file_path
+
+    raise ValueError(
+        "Either s3_bucket_operators_latest_iib_path or operators_latest_iib_filepath must be set in config"
+    )
 
 
-def push_changes(repo_url, slack_webhook_url, logger):
-    has_changes = False
-    logger.info(f"{LOG_PREFIX} Check if {OPERATORS_DATA_FILE} was changed")
-    with change_directory(directory=LOCAL_REPO_PATH, logger=logger):
-        try:
-            _git_repo = Repo(LOCAL_REPO_PATH)
-            _git_repo.git.config("user.email", "ci-jobs-trigger@local")
-            _git_repo.git.config("user.name", "ci-jobs-trigger")
-            os.system("pre-commit install")
+def get_new_iib_data(config_data, logger):
+    target_file_path = iib_data_filepath(config_data=config_data, logger=logger)
 
-            if OPERATORS_DATA_FILE_NAME in _git_repo.git.status():
-                has_changes = True
-                logger.info(f"{LOG_PREFIX} Found changes for {OPERATORS_DATA_FILE_NAME}, pushing new changes")
-                logger.info(f"{LOG_PREFIX} Run pre-commit on {OPERATORS_DATA_FILE_NAME}")
-                os.system(f"pre-commit run --files {OPERATORS_DATA_FILE_NAME}")
-                logger.info(f"{LOG_PREFIX} Adding {OPERATORS_DATA_FILE_NAME} to git")
-                _git_repo.git.add(OPERATORS_DATA_FILE_NAME)
-                logger.info(f"{LOG_PREFIX} Committing changes for {OPERATORS_DATA_FILE_NAME}")
-                _git_repo.git.commit("-m", f"'Auto update: {OPERATORS_DATA_FILE_NAME}'")
-                logger.info(f"{LOG_PREFIX} Push new changes for {OPERATORS_DATA_FILE}")
-                _git_repo.git.push(repo_url)
-                logger.info(f"{LOG_PREFIX} New changes for {OPERATORS_DATA_FILE_NAME} pushed")
-        except Exception as ex:
-            err_msg = f"{LOG_PREFIX} Failed to update {OPERATORS_DATA_FILE_NAME}. {ex}"
-            logger.error(err_msg)
-            send_slack_message(message=err_msg, webhook_url=slack_webhook_url, logger=logger)
+    try:
+        with open(target_file_path) as fd:
+            return json.load(fd)
 
-    logger.info(f"{LOG_PREFIX} Done check if {OPERATORS_DATA_FILE} was changed. was changed: {has_changes}")
+    except JSONDecodeError:
+        return {}
 
 
 def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
     logger.info(f"{LOG_PREFIX} Check for new operators IIB")
     config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
-    slack_errors_webhook_url = config_data.get("slack_errors_webhook_url")
-    token = config_data["github_token"]
-    repo_url = f"https://{token}@github.com/RedHatQE/ci-jobs-trigger.git"
-    clone_repo(repo_url=repo_url)
-    trigger_dict = get_new_iib(config_data=config_data, logger=logger)
-    push_changes(repo_url=repo_url, slack_webhook_url=slack_errors_webhook_url, logger=logger)
+
+    iib_data = get_new_iib_data(config_data=config_data, logger=logger)
+    trigger_dict = get_new_iib(config_data=config_data, logger=logger, iib_data=iib_data)
 
     failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():

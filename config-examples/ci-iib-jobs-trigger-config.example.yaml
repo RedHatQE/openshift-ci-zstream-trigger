@@ -1,5 +1,5 @@
-# Mandatory - token for https://github.com/RedHatQE/ci-jobs-trigger
-github_token: <Github token>
+# Optional - operators latest iib json filepath
+operators_latest_iib_filepath: <operators latest iib json filepath>
 
 # openshift ci trigger config - mandatory if using openshift ci
 trigger_token: <openshift-ci trigger token>
@@ -12,6 +12,12 @@ jenkins_url: <jenkins url>
 # Optional
 slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>
+
+# Optional - if using S3 as storage for operators-latest-iib.json
+aws_access_key_id: !ENV "${AWS_ACCESS_KEY_ID}"
+aws_secret_access_key: !ENV "${AWS_SECRET_ACCESS_KEY}"
+s3_bucket_operators_latest_iib_path: <s3 bucket operators latest iib json path>
+aws_region: <aws region>
 
 ci_jobs:
   <openshift version 1>:

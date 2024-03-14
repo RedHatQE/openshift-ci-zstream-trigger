@@ -39,6 +39,7 @@ gitpython = "^3.1.42"
 pygithub = "^2.2.0"
 python-gitlab = "^4.4.0"
 python-jenkins = "^1.8.2"
+redhat-qe-cloud-tools = "^1.0.47"
 
 
 [tool.poetry.group.dev.dependencies]
