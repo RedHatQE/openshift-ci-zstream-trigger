@@ -123,8 +123,8 @@ def get_new_iib(config_data, logger, iib_data):
 
 def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_region, slack_errors_webhook_url, logger):
     if not aws_region:
-        error_msg = "aws_region is required if s3_bucket_operators_latest_iib_path is set"
-        logger.error(f"{LOG_PREFIX} {error_msg}")
+        error_msg = f"{LOG_PREFIX} aws_region is required if s3_bucket_operators_latest_iib_path is set"
+        logger.error(error_msg)
         send_slack_message(
             message=error_msg,
             webhook_url=slack_errors_webhook_url,
@@ -186,11 +186,43 @@ def get_iib_data_from_file(config_data, logger):
         return {}
 
 
+def verify_s3_or_local_file(
+    s3_bucket_operators_latest_iib_path,
+    operators_latest_iib_filepath,
+    config_dict,
+    logger,
+):
+    if s3_bucket_operators_latest_iib_path and operators_latest_iib_filepath:
+        error_msg = (
+            f"{LOG_PREFIX} Cannot set both s3_bucket_operators_latest_iib_path and operators_latest_iib_filepath"
+        )
+        logger.error(error_msg)
+        send_slack_message(
+            message=error_msg,
+            webhook_url=config_dict.get("slack_errors_webhook_url"),
+            logger=logger,
+        )
+        return False
+
+    return True
+
+
 def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
     logger.info(f"{LOG_PREFIX} Check for new operators IIB")
     config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
 
-    if config_data.get("s3_bucket_operators_latest_iib_path") or not config_data.get("operators_latest_iib_filepath"):
+    s3_bucket_operators_latest_iib_path = config_data.get("s3_bucket_operators_latest_iib_path")
+    operators_latest_iib_filepath = config_data.get("operators_latest_iib_filepath")
+
+    if not verify_s3_or_local_file(
+        s3_bucket_operators_latest_iib_path=s3_bucket_operators_latest_iib_path,
+        operators_latest_iib_filepath=operators_latest_iib_filepath,
+        config_dict=config_dict,
+        logger=logger,
+    ):
+        return False
+
+    if s3_bucket_operators_latest_iib_path or not operators_latest_iib_filepath:
         config_data["local_operators_latest_iib_filepath"] = local_iib_filepath(logger=logger, tmp_dir=tmp_dir)
 
     iib_data_from_file = get_iib_data_from_file(config_data=config_data, logger=logger)

@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 import requests
 from simple_logger.logger import get_logger
@@ -70,9 +72,11 @@ def config_dict_no_ci_jobs(base_config_dict):
 
 def test_fetch_update_iib_and_trigger_jobs_no_ci_jobs_config(mocker, functions_mocker, config_dict_no_ci_jobs):
     mocker.patch.object(requests, "get", return_value=MockRequestGet())
-    assert not fetch_update_iib_and_trigger_jobs(config_dict=config_dict_no_ci_jobs, logger=LOGGER)
+    assert not fetch_update_iib_and_trigger_jobs(
+        config_dict=config_dict_no_ci_jobs, logger=LOGGER, tmp_dir=tempfile.mkdtemp(dir="/tmp")
+    )
 
 
 def test_fetch_update_iib_and_trigger_jobs(mocker, functions_mocker, config_dict):
     mocker.patch.object(requests, "get", return_value=MockRequestGet())
-    fetch_update_iib_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
+    fetch_update_iib_and_trigger_jobs(config_dict=config_dict, logger=LOGGER, tmp_dir=tempfile.mkdtemp(dir="/tmp"))
