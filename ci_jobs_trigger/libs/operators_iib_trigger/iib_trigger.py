@@ -38,17 +38,28 @@ def get_operator_data_from_url(operator_name, ocp_version, logger):
             yield _index
 
 
-def upload_download_s3_bucket_file(action, filename, s3_bucket_file_full_path, region, logger):
-    bucket, key = s3_bucket_file_full_path.split("/", 1)
-    client = s3_client(region_name=region)
+def upload_download_s3_bucket_file(action, filename, s3_bucket_file_full_path, region, logger, boto_s3_client=None):
+    supported_actions = ("upload", "download")
+    if action not in supported_actions:
+        raise ValueError(f"{LOG_PREFIX} Invalid action: {action}. Supported actions: {supported_actions}")
+
+    try:
+        bucket, key = s3_bucket_file_full_path.split("/", 1)
+
+    except ValueError:
+        raise ValueError(
+            f"{LOG_PREFIX} Invalid s3_bucket_file_full_path: {s3_bucket_file_full_path}. Must be in format 'bucket/key'"
+        )
+
+    client = boto_s3_client or s3_client(region_name=region)
 
     if action == "upload":
         logger.info(f"{LOG_PREFIX} Uploading IIB file to s3 {s3_bucket_file_full_path}")
-        client.upload_file(Filename=filename, Bucket=bucket, Key=key)
+        return client.upload_file(Filename=filename, Bucket=bucket, Key=key)
 
     elif action == "download":
         logger.info(f"{LOG_PREFIX} Downloading IIB file from s3 {s3_bucket_file_full_path}")
-        client.download_file(Bucket=bucket, Key=key, Filename=filename)
+        return client.download_file(Bucket=bucket, Key=key, Filename=filename)
 
 
 def write_new_data_to_file(config_data, new_data, logger):
@@ -155,12 +166,6 @@ def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_re
         return False
 
 
-def local_iib_filepath(logger, tmp_dir):
-    logger.info(f"{LOG_PREFIX} Created temp dir: {tmp_dir}")
-
-    return os.path.join(tmp_dir, "operators_latest_iib.json")
-
-
 def iib_data_filepath(config_data, logger):
     if s3_bucket_operators_latest_iib_path := config_data.get("s3_bucket_operators_latest_iib_path"):
         return download_iib_file_from_s3_bucket(
@@ -188,18 +193,18 @@ def get_iib_data_from_file(config_data, logger):
 
 def verify_s3_or_local_file(
     s3_bucket_operators_latest_iib_path,
-    operators_latest_iib_filepath,
-    config_dict,
+    user_local_operators_latest_iib_filepath,
+    slack_errors_webhook_url,
     logger,
 ):
-    if s3_bucket_operators_latest_iib_path and operators_latest_iib_filepath:
+    if s3_bucket_operators_latest_iib_path and user_local_operators_latest_iib_filepath:
         error_msg = (
             f"{LOG_PREFIX} Cannot set both s3_bucket_operators_latest_iib_path and operators_latest_iib_filepath"
         )
         logger.error(error_msg)
         send_slack_message(
             message=error_msg,
-            webhook_url=config_dict.get("slack_errors_webhook_url"),
+            webhook_url=slack_errors_webhook_url,
             logger=logger,
         )
         return False
@@ -212,18 +217,21 @@ def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
     config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
 
     s3_bucket_operators_latest_iib_path = config_data.get("s3_bucket_operators_latest_iib_path")
-    operators_latest_iib_filepath = config_data.get("operators_latest_iib_filepath")
+    user_local_operators_latest_iib_filepath = config_data.get("operators_latest_iib_filepath")
 
     if not verify_s3_or_local_file(
         s3_bucket_operators_latest_iib_path=s3_bucket_operators_latest_iib_path,
-        operators_latest_iib_filepath=operators_latest_iib_filepath,
-        config_dict=config_dict,
+        user_local_operators_latest_iib_filepath=user_local_operators_latest_iib_filepath,
+        slack_errors_webhook_url=config_data.get("slack_errors_webhook_url"),
         logger=logger,
     ):
         return False
 
-    if s3_bucket_operators_latest_iib_path or not operators_latest_iib_filepath:
-        config_data["local_operators_latest_iib_filepath"] = local_iib_filepath(logger=logger, tmp_dir=tmp_dir)
+    # When using S3 or running locally with a tmp file
+    if not user_local_operators_latest_iib_filepath:
+        local_operators_latest_iib_filepath = os.path.join(tmp_dir, "operators_latest_iib.json")
+        logger.info(f"{LOG_PREFIX} Created temp dir: {local_operators_latest_iib_filepath}")
+        config_data["local_operators_latest_iib_filepath"] = local_operators_latest_iib_filepath
 
     iib_data_from_file = get_iib_data_from_file(config_data=config_data, logger=logger)
     trigger_dict = get_new_iib(config_data=config_data, logger=logger, iib_data=iib_data_from_file)
