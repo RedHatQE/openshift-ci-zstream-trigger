@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from flask import Flask
 from flask import request
@@ -91,7 +92,7 @@ if __name__ == "__main__":
     run_in_process(
         targets={
             monitor_and_trigger: {"logger": APP.logger},
-            run_iib_update: {"logger": APP.logger},
+            run_iib_update: {"logger": APP.logger, "tmp_dir": tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")},
         }
     )
     APP.logger.info(f"Starting {APP.name} app")

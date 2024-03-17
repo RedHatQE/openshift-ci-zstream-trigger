@@ -1,7 +1,6 @@
 import copy
 import json
 import os
-import tempfile
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -156,11 +155,10 @@ def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_re
         return False
 
 
-def local_iib_filepath(logger):
-    maketemp_dir = tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")
-    logger.info(f"{LOG_PREFIX} Created temp dir: {maketemp_dir}")
+def local_iib_filepath(logger, tmp_dir):
+    logger.info(f"{LOG_PREFIX} Created temp dir: {tmp_dir}")
 
-    return os.path.join(maketemp_dir, "operators_latest_iib.json")
+    return os.path.join(tmp_dir, "operators_latest_iib.json")
 
 
 def iib_data_filepath(config_data, logger):
@@ -188,15 +186,12 @@ def get_iib_data_from_file(config_data, logger):
         return {}
 
 
-def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
-    # TODO:
-    # decide what to do if both local and s3 are set
-    # how to use the same temp local file during loops
+def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
     logger.info(f"{LOG_PREFIX} Check for new operators IIB")
     config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
 
     if config_data.get("s3_bucket_operators_latest_iib_path") or not config_data.get("operators_latest_iib_filepath"):
-        config_data["local_operators_latest_iib_filepath"] = local_iib_filepath(logger=logger)
+        config_data["local_operators_latest_iib_filepath"] = local_iib_filepath(logger=logger, tmp_dir=tmp_dir)
 
     iib_data_from_file = get_iib_data_from_file(config_data=config_data, logger=logger)
     trigger_dict = get_new_iib(config_data=config_data, logger=logger, iib_data=iib_data_from_file)
@@ -223,10 +218,10 @@ def fetch_update_iib_and_trigger_jobs(logger, config_dict=None):
     return failed_triggered_jobs
 
 
-def run_iib_update(logger):
+def run_iib_update(logger, tmp_dir):
     while True:
         try:
-            failed_triggered_jobs = fetch_update_iib_and_trigger_jobs(logger=logger)
+            failed_triggered_jobs = fetch_update_iib_and_trigger_jobs(logger=logger, tmp_dir=tmp_dir)
             if failed_triggered_jobs:
                 logger.info(f"{LOG_PREFIX} Failed triggered jobs: {failed_triggered_jobs}")
 
