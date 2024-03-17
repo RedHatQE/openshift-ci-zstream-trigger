@@ -83,13 +83,6 @@ def config_dict_no_ci_jobs(base_config_dict):
 
 
 @pytest.fixture()
-def upload_filepath(tmp_path):
-    tmp_file = tmp_path / "test"
-    tmp_file.touch()
-    return tmp_file
-
-
-@pytest.fixture()
 def s3_client_mock(mocker):
     client_mock = mocker.patch("clouds.aws.session_clients.s3_client", return_value=MockS3Client())
     return client_mock()
