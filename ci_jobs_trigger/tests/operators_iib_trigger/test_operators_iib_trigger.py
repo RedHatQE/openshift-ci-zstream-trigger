@@ -119,13 +119,14 @@ def test_both_s3_and_local_file_configs():
 
 
 def test_invalid_upload_download_s3_action():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=".*Invalid action.*"):
         upload_download_s3_bucket_file(
             action="invalid_action",
             filename=None,
             s3_bucket_file_full_path=None,
             region=None,
             logger=LOGGER,
+            slack_errors_webhook_url=None,
         )
 
 
@@ -137,6 +138,7 @@ def test_download_file_from_s3_bucket(s3_client_mock):
         region=None,
         logger=LOGGER,
         boto_s3_client=s3_client_mock,
+        slack_errors_webhook_url=None,
     )
 
 
@@ -148,4 +150,5 @@ def test_upload_missing_file_from_s3_bucket(s3_client_mock):
         region=None,
         logger=LOGGER,
         boto_s3_client=s3_client_mock,
+        slack_errors_webhook_url=None,
     )

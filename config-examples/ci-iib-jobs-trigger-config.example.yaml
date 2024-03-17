@@ -1,6 +1,3 @@
-# Optional - operators latest iib json filepath
-operators_latest_iib_filepath: <operators latest iib json filepath>
-
 # openshift ci trigger config - mandatory if using openshift ci
 trigger_token: <openshift-ci trigger token>
 
@@ -18,6 +15,9 @@ aws_access_key_id: !ENV "${AWS_ACCESS_KEY_ID}"
 aws_secret_access_key: !ENV "${AWS_SECRET_ACCESS_KEY}"
 s3_bucket_operators_latest_iib_path: <s3 bucket operators latest iib json path>
 aws_region: <aws region>
+
+# Optional - operators latest iib json filepath
+local_operators_latest_iib_filepath: <operators latest iib json filepath>
 
 ci_jobs:
   <openshift version 1>:
