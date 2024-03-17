@@ -9,7 +9,6 @@ Only periodic jobs can be re-triggered (openShift-ci API limitation).
 - openshift ci
 
 ### Configuration
-- The config file is read from `OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG` environment variable on every cycle.
 - Create a yaml file [example](../../../../config-examples/zstream-trigger-config.example.yaml) and update the relevant fields.
 - Export `OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG` environment variable which points to the configuration yaml file
 
