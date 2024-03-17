@@ -17,6 +17,7 @@ Index image can be written to:
 - S3 configuration:
   - aws_access_key_id
   - aws_secret_access_key
+  - aws_region
   - s3_bucket_operators_latest_iib_path - path to S3 bucket and filename
 - To use a local file, set:
   - operators_latest_iib_filepath
