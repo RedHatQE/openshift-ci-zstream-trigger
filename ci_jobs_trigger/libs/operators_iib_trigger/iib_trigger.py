@@ -62,7 +62,7 @@ def upload_download_s3_bucket_file(action, filename, s3_bucket_file_full_path, r
         return client.download_file(Bucket=bucket, Key=key, Filename=filename)
 
 
-def write_new_data_to_file(config_data, new_data, logger):
+def write_new_data_to_file_and_upload_to_s3(config_data, new_data, logger):
     iib_file = config_data.get(
         "operators_latest_iib_filepath",
         config_data.get("local_operators_latest_iib_filepath"),
@@ -127,7 +127,7 @@ def get_new_iib(config_data, logger, iib_data):
     if new_trigger_data:
         logger.info(f"{LOG_PREFIX} New IIB data found: {new_data}\nOld IIB data: {iib_data}")
 
-        write_new_data_to_file(config_data=config_data, new_data=new_data, logger=logger)
+        write_new_data_to_file_and_upload_to_s3(config_data=config_data, new_data=new_data, logger=logger)
 
     return new_data
 
@@ -160,7 +160,7 @@ def download_iib_file_from_s3_bucket(s3_bucket_operators_latest_iib_path, aws_re
 
     except Exception as ex:
         logger.error(
-            "Failed to download IIB file from s3_bucket_operators_latest_iib_path: "
+            f"{LOG_PREFIX} Failed to download IIB file from s3_bucket_operators_latest_iib_path: "
             f"{s3_bucket_operators_latest_iib_path}. error: {ex}"
         )
         return False
