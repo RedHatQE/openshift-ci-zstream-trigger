@@ -123,7 +123,7 @@ def get_new_iib(config_data, logger):
                 for _operator, _operator_name in job_products.items():
                     new_data[_ocp_version][job_name]["operators"].setdefault(_operator_name, {})
                     _operator_data = new_data[_ocp_version][job_name]["operators"][_operator_name]
-                    _operator_data["triggered"] = False
+                    _operator_data["new-iib"] = False
                     logger.info(f"{LOG_PREFIX} Parsing new IIB data for {_operator_name}")
                     for data_from_file in get_operator_data_from_url(
                         operator_name=_operator,
@@ -138,12 +138,12 @@ def get_new_iib(config_data, logger):
                             iib_from_file = iib_data_from_file.split("iib:")[-1]
                             if iib_from_file < iib_from_url:
                                 _operator_data["iib"] = index_image
-                                _operator_data["triggered"] = True
+                                _operator_data["new-iib"] = True
                                 new_trigger_data = True
 
                         else:
                             _operator_data["iib"] = index_image
-                            _operator_data["triggered"] = True
+                            _operator_data["new-iib"] = True
                             new_trigger_data = True
 
             logger.info(f"{LOG_PREFIX} Done parsing new IIB data for {_jobs_data}")
@@ -266,7 +266,7 @@ def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
     for _, _job_data in trigger_dict.items():
         for _job_name, _job_dict in _job_data.items():
             operators = _job_dict["operators"]
-            if any([_value["triggered"] for _value in operators.values()]):
+            if any([_value["new-iib"] for _value in operators.values()]):
                 try:
                     trigger_ci_job(
                         job=_job_name,
