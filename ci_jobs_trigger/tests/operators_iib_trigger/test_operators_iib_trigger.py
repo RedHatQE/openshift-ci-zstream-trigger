@@ -97,20 +97,6 @@ def s3_client_mock(mocker):
     return client_mock()
 
 
-@pytest.fixture()
-def datagrubber_mock(mocker):
-    return mocker.patch(
-        "ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger.datagrubber",
-        return_value={
-            "added_bundle_images": [
-                "registry-proxy.engineering.redhat.com/rh-osbs/managed-open-data-hub-odh-operator-bundle-rhel8:v1.18.0-258"
-            ],
-            "index_image": "registry-proxy.engineering.redhat.com/rh-osbs/iib:690654",
-            "ocp_version": "v4.15",
-        },
-    )
-
-
 def test_fetch_update_iib_and_trigger_jobs_no_ci_jobs_config(mocker, functions_mocker, config_dict_no_ci_jobs):
     mocker.patch.object(requests, "get", return_value=MockRequestGet())
     assert not fetch_update_iib_and_trigger_jobs(
