@@ -1047,12 +1047,12 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openshift-python-utilities"
-version = "5.0.29"
+version = "5.0.30"
 description = "A utilities repository for https://github.com/RedHatQE/openshift-python-wrapper"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "openshift_python_utilities-5.0.29.tar.gz", hash = "sha256:da8dc4f7977a7bdff2a8391bba966e19fa9ba9bb6c197f19ee51c56e98fd4242"},
+    {file = "openshift_python_utilities-5.0.30.tar.gz", hash = "sha256:3874c9eb154101b197aa7c7f691c5e4ffec2b8a74f2d5c1e68719ab8e6aafb8e"},
 ]
 
 [package.dependencies]
@@ -1065,7 +1065,7 @@ python-simple-logger = ">=1.0.5"
 pyyaml = ">=6.0.1,<7.0.0"
 requests = ">=2.31.0,<3.0.0"
 semver = ">=3.0.2,<4.0.0"
-timeout-sampler = ">=0.0.1"
+timeout-sampler = ">=0.0.17"
 
 [[package]]
 name = "openshift-python-wrapper"
@@ -1551,12 +1551,12 @@ six = ">=1.3.0"
 
 [[package]]
 name = "python-simple-logger"
-version = "1.0.17"
+version = "1.0.18"
 description = "A simple logger for python"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "python_simple_logger-1.0.17.tar.gz", hash = "sha256:187d04637e83737dd49e0bba4785933d7ab3eb8b96b85acd826e0a17e34f47d2"},
+    {file = "python_simple_logger-1.0.18.tar.gz", hash = "sha256:0e3693986f230f6bd8acd09c757af29760e92ecb25c28924f948f96f0a8ebdcc"},
 ]
 
 [package.dependencies]
@@ -1641,12 +1641,12 @@ files = [
 
 [[package]]
 name = "redhat-qe-cloud-tools"
-version = "1.0.51"
+version = "1.0.52"
 description = "Python utilities to manage cloud services, such as AWS."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "redhat_qe_cloud_tools-1.0.51.tar.gz", hash = "sha256:aa127cf705787170a12d7458a876850671f237b84a10256283bf62a91d9d748d"},
+    {file = "redhat_qe_cloud_tools-1.0.52.tar.gz", hash = "sha256:18db92b3515fec7c8cb10b74cf8ff8c2acdbcde09afd0e2441b8e1a30ba04d74"},
 ]
 
 [package.dependencies]
@@ -1829,12 +1829,12 @@ files = [
 
 [[package]]
 name = "timeout-sampler"
-version = "0.0.9"
+version = "0.0.18"
 description = "Timeout utility class to wait for any function output and interact with it in given time"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "timeout_sampler-0.0.9.tar.gz", hash = "sha256:aadfcf9db6a27a54343fbf32966fdb210c7cb1743f2bf8ba3c156297cfd9c268"},
+    {file = "timeout_sampler-0.0.18.tar.gz", hash = "sha256:5323624791749fd8e15c58f1aa6122b41486e07a21cd311130cd27c17c8f4b9c"},
 ]
 
 [package.dependencies]
