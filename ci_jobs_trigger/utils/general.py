@@ -35,18 +35,21 @@ def get_config(os_environ, logger, config_dict=None):
 
 
 def send_slack_message(message, webhook_url, logger):
-    if webhook_url:
-        slack_data = {"text": message}
-        logger.info(f"Sending message to slack: {message}")
-        response = requests.post(
-            webhook_url,
-            data=json.dumps(slack_data),
-            headers={"Content-Type": "application/json"},
-        )
-        if response.status_code != 200:
-            raise ValueError(
-                f"Request to slack returned an error {response.status_code} with the following message: {response.text}"
+    try:
+        if webhook_url:
+            slack_data = {"text": message}
+            logger.info(f"Sending message to slack: {message}")
+            response = requests.post(
+                webhook_url,
+                data=json.dumps(slack_data),
+                headers={"Content-Type": "application/json"},
             )
+            if response.status_code != 200:
+                logger.error(
+                    f"Request to slack returned an error {response.status_code} with the following message: {response.text}"
+                )
+    except Exception as ex:
+        logger.error(f"Failed to send slack message. error: {ex}")
 
 
 def run_in_process(targets):
