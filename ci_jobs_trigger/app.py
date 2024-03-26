@@ -13,14 +13,12 @@ from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import (
 from ci_jobs_trigger.libs.openshift_ci.re_trigger.re_trigger import JobTriggering
 from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger import (
     OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
-    monitor_and_trigger,
     process_and_trigger_jobs,
 )
 from ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger import run_iib_update
 from ci_jobs_trigger.utils.general import (
     get_config,
     process_webhook_exception,
-    run_in_process,
 )
 
 APP = Flask("ci-jobs-trigger")
@@ -89,12 +87,13 @@ def process_addons_trigger():
 
 
 if __name__ == "__main__":
-    run_in_process(
-        targets={
-            monitor_and_trigger: {"logger": APP.logger},
-            run_iib_update: {"logger": APP.logger, "tmp_dir": tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")},
-        }
-    )
+    run_iib_update(logger=APP.logger, tmp_dir=tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger"))
+    # run_in_process(
+    #     targets={
+    #         monitor_and_trigger: {"logger": APP.logger},
+    #         run_iib_update: {"logger": APP.logger, "tmp_dir": tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")},
+    #     }
+    # )
     APP.logger.info(f"Starting {APP.name} app")
     APP.run(
         port=int(os.environ.get("CI_JOBS_TRIGGER_LISTEN_PORT", 5000)),
