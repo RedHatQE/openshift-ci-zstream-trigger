@@ -1,5 +1,6 @@
 # Mandatory
 trigger_token: <openshift-ci trigger token>
+processed_versions_file_path: <path to processed versions file>
 
 # Optional
 slack_webhook_url: <slack webhook url to post job status>
