@@ -12,27 +12,32 @@ OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR = "OPENSHIFT_CI_ZSTREAM_TRIGGER_C
 LOG_PREFIX = "Zstream trigger:"
 
 
-def processed_versions_file(processed_versions_file_path):
+def processed_versions_file(processed_versions_file_path, logger):
     try:
         with open(processed_versions_file_path) as fd:
             return json.load(fd)
-    except Exception:
+    except Exception as exp:
+        logger.error(
+            f"{LOG_PREFIX} Failed to load processed versions file: {processed_versions_file_path}. error: {exp}"
+        )
         return {}
 
 
-def update_processed_version(base_version, version, processed_versions_file_path):
-    processed_versions_file_content = processed_versions_file(processed_versions_file_path=processed_versions_file_path)
+def update_processed_version(base_version, version, processed_versions_file_path, logger):
+    processed_versions_file_content = processed_versions_file(
+        processed_versions_file_path=processed_versions_file_path, logger=logger
+    )
     processed_versions_file_content.setdefault(base_version, []).append(version)
     processed_versions_file_content[base_version] = list(set(processed_versions_file_content[base_version]))
     with open(processed_versions_file_path, "w") as fd:
         json.dump(processed_versions_file_content, fd)
 
 
-def already_processed_version(base_version, version, processed_versions_file_path):
-    if base_versions := processed_versions_file(processed_versions_file_path=processed_versions_file_path).get(
-        base_version
-    ):
-        return Version.parse(base_versions[0]) <= Version.parse(version)
+def already_processed_version(base_version, new_version, processed_versions_file_path, logger):
+    if base_versions := processed_versions_file(
+        processed_versions_file_path=processed_versions_file_path, logger=logger
+    ).get(base_version):
+        return Version.parse(new_version) <= Version.parse(base_versions[0])
     return False
 
 
@@ -50,21 +55,32 @@ def trigger_jobs(config, jobs, logger):
     if successful_triggers_jobs:
         success_msg = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs}"
         logger.info(f"{LOG_PREFIX} {success_msg}")
-        send_slack_message(message=success_msg, webhook_url=config.get("slack_webhook_url"), logger=logger)
+        send_slack_message(
+            message=success_msg,
+            webhook_url=config.get("slack_webhook_url"),
+            logger=logger,
+        )
         return True
 
     if failed_triggers_jobs:
         err_msg = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs}"
         logger.info(f"{LOG_PREFIX} {err_msg}")
-        send_slack_message(message=err_msg, webhook_url=config.get("slack_errors_webhook_url"), logger=logger)
+        send_slack_message(
+            message=err_msg,
+            webhook_url=config.get("slack_errors_webhook_url"),
+            logger=logger,
+        )
         return False
 
 
 def process_and_trigger_jobs(logger, version=None, config_dict=None):
     config = get_config(
-        os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR, logger=logger, config_dict=config_dict
+        os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
+        logger=logger,
+        config_dict=config_dict,
     )
     if not config:
+        logger.error(f"{LOG_PREFIX} Could not get config.")
         return False
 
     stable_versions = get_accepted_cluster_versions()["stable"]
@@ -98,9 +114,11 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
             _latest_version = stable_versions[version_str][0]
             if already_processed_version(
                 base_version=version,
-                version=_latest_version,
+                new_version=_latest_version,
                 processed_versions_file_path=_processed_versions_file_path,
+                logger=logger,
             ):
+                logger.info(f"{LOG_PREFIX} Version {version_str} already processed, skipping")
                 continue
 
             logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {jobs}")
@@ -109,6 +127,7 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
                     base_version=version_str,
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
+                    logger=logger,
                 )
                 return True
 
