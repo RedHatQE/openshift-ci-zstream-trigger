@@ -1048,12 +1048,12 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openshift-python-utilities"
-version = "5.0.34"
+version = "5.0.35"
 description = "A utilities repository for https://github.com/RedHatQE/openshift-python-wrapper"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "openshift_python_utilities-5.0.34.tar.gz", hash = "sha256:c087b1b1cccb0956a37007d08d92152f15da5db051fb99f21fd173698e4bae8c"},
+    {file = "openshift_python_utilities-5.0.35.tar.gz", hash = "sha256:c375f07f512167cbae4500e18b7f7ccf65f01b6a1a32c80e7f620a283fab0299"},
 ]
 
 [package.dependencies]
