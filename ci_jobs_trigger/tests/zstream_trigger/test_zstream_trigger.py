@@ -12,7 +12,7 @@ from ci_jobs_trigger.tests.zstream_trigger.manifests.versions import VERSIONS
 LOGGER = get_logger("test_zstream_trigger")
 
 LIBS_ZSTREAM_TRIGGER_PATH = "ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger"
-GET_ACCEPTED_CLUSTER_VERSIONS_PATH = "ocp_utilities.cluster_versions.get_accepted_cluster_versions"
+GET_ACCEPTED_CLUSTER_VERSIONS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.get_accepted_cluster_versions"
 TRIGGER_JOBS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.openshift_ci_trigger_job"
 
 
@@ -86,7 +86,7 @@ def test_process_and_trigger_jobs(config_dict, job_trigger_and_get_versions_mock
 def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_trigger_and_get_versions_mocker):
     mocker.patch(
         f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
-        return_value={"4.13": ["4.13.39"]},
+        return_value={"4.13": ["4.13.34"]},
     )
 
     assert not process_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
@@ -95,7 +95,7 @@ def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_tri
 def test_process_and_trigger_jobs_new_version(mocker, config_dict, job_trigger_and_get_versions_mocker):
     mocker.patch(
         f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
-        return_value={"4.13": ["4.13.34"]},
+        return_value={"4.13": ["4.13.33"]},
     )
 
     assert process_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
