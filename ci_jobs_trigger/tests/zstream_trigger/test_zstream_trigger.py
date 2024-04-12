@@ -86,7 +86,7 @@ def test_process_and_trigger_jobs(config_dict, job_trigger_and_get_versions_mock
 def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_trigger_and_get_versions_mocker):
     mocker.patch(
         f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
-        return_value={"4.13": ["4.13.34"]},
+        return_value={"4.13": ["4.13.34", "4.13.33"]},
     )
 
     assert not process_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)
@@ -95,7 +95,7 @@ def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_tri
 def test_process_and_trigger_jobs_new_version(mocker, config_dict, job_trigger_and_get_versions_mocker):
     mocker.patch(
         f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
-        return_value={"4.13": ["4.13.33"]},
+        return_value={"4.13": ["4.13.33", "4.13.32"]},
     )
 
     assert process_and_trigger_jobs(config_dict=config_dict, logger=LOGGER)

@@ -3,6 +3,7 @@ import time
 
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
 from semver import Version
+import packaging.version
 
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
@@ -28,16 +29,17 @@ def update_processed_version(base_version, version, processed_versions_file_path
         processed_versions_file_path=processed_versions_file_path, logger=logger
     )
     processed_versions_file_content.setdefault(base_version, []).append(version)
+    processed_versions_file_content[base_version].sort(key=packaging.version.Version, reverse=True)
     processed_versions_file_content[base_version] = list(set(processed_versions_file_content[base_version]))
     with open(processed_versions_file_path, "w") as fd:
         json.dump(processed_versions_file_content, fd)
 
 
 def already_processed_version(base_version, new_version, processed_versions_file_path, logger):
-    if base_versions := processed_versions_file(
+    if all_versions := processed_versions_file(
         processed_versions_file_path=processed_versions_file_path, logger=logger
     ).get(base_version):
-        return Version.parse(new_version) <= Version.parse(base_versions[0])
+        return Version.parse(new_version) <= Version.parse(all_versions[0])
     return False
 
 
