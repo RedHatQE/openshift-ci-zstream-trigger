@@ -1048,12 +1048,12 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openshift-python-utilities"
-version = "5.0.36"
+version = "5.0.37"
 description = "A utilities repository for https://github.com/RedHatQE/openshift-python-wrapper"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "openshift_python_utilities-5.0.36.tar.gz", hash = "sha256:51921d8d3894b471607a454b671f62d0bc1f5c617c9d4ff1f33c0e2f571061fe"},
+    {file = "openshift_python_utilities-5.0.37.tar.gz", hash = "sha256:cfabb86b9a9a2706e649f24d4f9fd7124a4da3b9ac74a6d16115d1147d0b76cd"},
 ]
 
 [package.dependencies]
@@ -1641,12 +1641,12 @@ files = [
 
 [[package]]
 name = "redhat-qe-cloud-tools"
-version = "1.0.60"
+version = "1.0.61"
 description = "Python utilities to manage cloud services, such as AWS."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "redhat_qe_cloud_tools-1.0.60.tar.gz", hash = "sha256:5bb1fc3e82d2e6fd9c7a4b6c54e0cfa3681f660f56155fea3d9f4a23790bd2c3"},
+    {file = "redhat_qe_cloud_tools-1.0.61.tar.gz", hash = "sha256:e6687c6d465db14e17af8813b05f55f134d4644e773713ad84e7f0f772fef853"},
 ]
 
 [package.dependencies]
