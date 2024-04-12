@@ -23,10 +23,7 @@ class OpenshiftCiReTriggerError(Exception):
         return f"{self.log_prefix} Openshift CI job re-trigger failed: {self.msg}"
 
 
-def get_config(os_environ, logger, config_dict=None):
-    if config_dict:
-        return config_dict
-
+def get_config(os_environ, logger):
     try:
         return parse_config(path=os.environ.get(os_environ), default_value="")
     except Exception as ex:

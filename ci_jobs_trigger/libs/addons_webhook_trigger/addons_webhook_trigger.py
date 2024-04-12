@@ -34,7 +34,7 @@ def get_merge_request(repository_data, object_attributes, project, logger):
     return merge_request
 
 
-def process_hook(data, logger, config_dict=None):
+def process_hook(data, logger):
     def _trigger_jobs(
         _addon,
         _ocm_env,
@@ -95,9 +95,7 @@ def process_hook(data, logger, config_dict=None):
 
     object_attributes = data["object_attributes"]
     if object_attributes.get("action") == "merge":
-        config_data = get_config(
-            config_dict=config_dict, os_environ=ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR, logger=logger
-        )
+        config_data = get_config(os_environ=ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR, logger=logger)
         repository_name = data["repository"]["name"]
         repository_data = repo_data_from_config(repository_name=repository_name, config_data=config_data)
         project = data["project"]["id"]

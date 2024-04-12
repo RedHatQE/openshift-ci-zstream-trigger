@@ -92,15 +92,14 @@ def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
             )
             return False
 
+    return False
 
-def process_and_trigger_jobs(
-    logger: logging.Logger, version: str | None = None, config_dict: Dict | None = None
-) -> bool:
+
+def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None) -> Dict:
     trigger_res: Dict = {}
     config = get_config(
         os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
         logger=logger,
-        config_dict=config_dict,
     )
     if not config:
         logger.error(f"{LOG_PREFIX} Could not get config.")
@@ -116,44 +115,45 @@ def process_and_trigger_jobs(
             raise ValueError(f"Version {version} not found in config.yaml")
 
         logger.info(f"{LOG_PREFIX} Triggering all jobs from config file under version {version}")
-        return trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        triggered = trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        trigger_res[version] = triggered
+        return trigger_res
 
     else:
         _processed_versions_file_path = config["processed_versions_file_path"]
-        for version, jobs in versions_from_config.items():
-            if not jobs:
+        for _version, _jobs in versions_from_config.items():
+            if not _jobs:
                 slack_error_url = config.get("slack_webhook_error_url")
-                logger.error(f"{LOG_PREFIX} No jobs found for version {version}")
+                logger.error(f"{LOG_PREFIX} No jobs found for version {_version}")
                 if slack_error_url:
                     send_slack_message(
-                        message=f"ZSTREAM-TRIGGER: No jobs found for version {version}",
+                        message=f"ZSTREAM-TRIGGER: No jobs found for version {_version}",
                         webhook_url=slack_error_url,
                         logger=logger,
                     )
-                trigger_res[version] = "No jobs found"
+                trigger_res[_version] = "No jobs found"
                 continue
 
-            version_str: str = str(version)
-            _latest_version = get_accepted_cluster_versions()["stable"][version_str][0]
+            _latest_version = get_accepted_cluster_versions()["stable"][_version][0]
             if already_processed_version(
-                base_version=version,
+                base_version=_version,
                 new_version=_latest_version,
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
-                logger.info(f"{LOG_PREFIX} Version {version_str} already processed, skipping")
-                trigger_res[version] = "Already processed"
+                logger.info(f"{LOG_PREFIX} Version {_version} already processed, skipping")
+                trigger_res[_version] = "Already processed"
                 continue
 
-            logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {jobs}")
-            if trigger_jobs(config=config, jobs=jobs, logger=logger):
+            logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {_jobs}")
+            if trigger_jobs(config=config, jobs=_jobs, logger=logger):
                 update_processed_version(
-                    base_version=version_str,
+                    base_version=_version,
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
                 )
-                trigger_res[version] = "Triggered"
+                trigger_res[_version] = "Triggered"
                 continue
 
         return trigger_res
