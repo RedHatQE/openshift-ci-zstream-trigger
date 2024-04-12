@@ -131,9 +131,9 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
                 )
-                return True
+                continue
 
-        return False
+        return True
 
 
 def monitor_and_trigger(logger):
