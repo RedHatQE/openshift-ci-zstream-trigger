@@ -1,6 +1,9 @@
+from __future__ import annotations
 import json
+import logging
 import time
 from pyhelper_utils.general import tts
+from typing import Dict, List
 
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
 from semver import Version
@@ -10,11 +13,11 @@ from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
 from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
 
-OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
-LOG_PREFIX = "Zstream trigger:"
+OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
+LOG_PREFIX: str = "Zstream trigger:"
 
 
-def processed_versions_file(processed_versions_file_path, logger):
+def processed_versions_file(processed_versions_file_path: str, logger: logging.Logger) -> Dict:
     try:
         with open(processed_versions_file_path) as fd:
             return json.load(fd)
@@ -25,7 +28,9 @@ def processed_versions_file(processed_versions_file_path, logger):
         return {}
 
 
-def update_processed_version(base_version, version, processed_versions_file_path, logger):
+def update_processed_version(
+    base_version: str, version: str, processed_versions_file_path: str, logger: logging.Logger
+) -> None:
     processed_versions_file_content = processed_versions_file(
         processed_versions_file_path=processed_versions_file_path, logger=logger
     )
@@ -36,7 +41,9 @@ def update_processed_version(base_version, version, processed_versions_file_path
         json.dump(processed_versions_file_content, fd)
 
 
-def already_processed_version(base_version, new_version, processed_versions_file_path, logger):
+def already_processed_version(
+    base_version: str, new_version: str, processed_versions_file_path: str, logger: logging.Logger
+) -> bool:
     if all_versions := processed_versions_file(
         processed_versions_file_path=processed_versions_file_path, logger=logger
     ).get(base_version):
@@ -44,52 +51,64 @@ def already_processed_version(base_version, new_version, processed_versions_file
     return False
 
 
-def trigger_jobs(config, jobs, logger):
-    failed_triggers_jobs = []
-    successful_triggers_jobs = []
-    for job in jobs:
-        res = openshift_ci_trigger_job(job_name=job, trigger_token=config["trigger_token"])
-
-        if res.ok:
-            successful_triggers_jobs.append(job)
-        else:
-            failed_triggers_jobs.append(job)
-
-    if successful_triggers_jobs:
-        success_msg = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs}"
-        logger.info(f"{LOG_PREFIX} {success_msg}")
+def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
+    failed_triggers_jobs: List = []
+    successful_triggers_jobs: List = []
+    if not jobs:
+        no_jobs_mgs: str = f"{LOG_PREFIX} No jobs to trigger"
+        logger.info(no_jobs_mgs)
         send_slack_message(
-            message=success_msg,
-            webhook_url=config.get("slack_webhook_url"),
-            logger=logger,
-        )
-        return True
-
-    if failed_triggers_jobs:
-        err_msg = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs}"
-        logger.info(f"{LOG_PREFIX} {err_msg}")
-        send_slack_message(
-            message=err_msg,
+            message=no_jobs_mgs,
             webhook_url=config.get("slack_errors_webhook_url"),
             logger=logger,
         )
         return False
 
+    else:
+        for job in jobs:
+            res = openshift_ci_trigger_job(job_name=job, trigger_token=config["trigger_token"])
 
-def process_and_trigger_jobs(logger, version=None, config_dict=None):
+            if res.ok:
+                successful_triggers_jobs.append(job)
+            else:
+                failed_triggers_jobs.append(job)
+
+        if successful_triggers_jobs:
+            success_msg: str = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs}"
+            logger.info(f"{LOG_PREFIX} {success_msg}")
+            send_slack_message(
+                message=success_msg,
+                webhook_url=config.get("slack_webhook_url"),
+                logger=logger,
+            )
+            return True
+
+        if failed_triggers_jobs:
+            err_msg: str = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs}"
+            logger.info(f"{LOG_PREFIX} {err_msg}")
+            send_slack_message(
+                message=err_msg,
+                webhook_url=config.get("slack_errors_webhook_url"),
+                logger=logger,
+            )
+            return False
+
+    return False
+
+
+def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None) -> Dict:
+    trigger_res: Dict = {}
     config = get_config(
         os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
         logger=logger,
-        config_dict=config_dict,
     )
     if not config:
         logger.error(f"{LOG_PREFIX} Could not get config.")
-        return False
+        return trigger_res
 
-    stable_versions = get_accepted_cluster_versions()["stable"]
-    if (versions_from_config := config.get("versions")) is None:
+    if not (versions_from_config := config.get("versions")):
         logger.error(f"{LOG_PREFIX} No versions found in config.yaml")
-        return False
+        return trigger_res
 
     if version:
         version_from_config = versions_from_config.get(version)
@@ -97,47 +116,51 @@ def process_and_trigger_jobs(logger, version=None, config_dict=None):
             raise ValueError(f"Version {version} not found in config.yaml")
 
         logger.info(f"{LOG_PREFIX} Triggering all jobs from config file under version {version}")
-        return trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        triggered = trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        trigger_res[version] = triggered
+        return trigger_res
 
     else:
         _processed_versions_file_path = config["processed_versions_file_path"]
-        for version, jobs in versions_from_config.items():
-            if not jobs:
+        for _version, _jobs in versions_from_config.items():
+            if not _jobs:
                 slack_error_url = config.get("slack_webhook_error_url")
-                logger.error(f"{LOG_PREFIX} No jobs found for version {version}")
+                logger.error(f"{LOG_PREFIX} No jobs found for version {_version}")
                 if slack_error_url:
                     send_slack_message(
-                        message=f"ZSTREAM-TRIGGER: No jobs found for version {version}",
+                        message=f"ZSTREAM-TRIGGER: No jobs found for version {_version}",
                         webhook_url=slack_error_url,
                         logger=logger,
                     )
+                trigger_res[_version] = "No jobs found"
                 continue
 
-            version_str = str(version)
-            _latest_version = stable_versions[version_str][0]
+            _latest_version = get_accepted_cluster_versions()["stable"][_version][0]
             if already_processed_version(
-                base_version=version,
+                base_version=_version,
                 new_version=_latest_version,
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
-                logger.info(f"{LOG_PREFIX} Version {version_str} already processed, skipping")
+                logger.info(f"{LOG_PREFIX} Version {_version} already processed, skipping")
+                trigger_res[_version] = "Already processed"
                 continue
 
-            logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {jobs}")
-            if trigger_jobs(config=config, jobs=jobs, logger=logger):
+            logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {_jobs}")
+            if trigger_jobs(config=config, jobs=_jobs, logger=logger):
                 update_processed_version(
-                    base_version=version_str,
+                    base_version=_version,
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
                 )
+                trigger_res[_version] = "Triggered"
                 continue
 
-        return True
+        return trigger_res
 
 
-def monitor_and_trigger(logger):
+def monitor_and_trigger(logger: logging.Logger) -> None:
     while True:
         try:
             _config = get_config(

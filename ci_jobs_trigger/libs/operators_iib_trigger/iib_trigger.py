@@ -231,7 +231,7 @@ def verify_s3_or_local_file(
 
 def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
     logger.info(f"{LOG_PREFIX} Check for new operators IIB")
-    config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger, config_dict=config_dict)
+    config_data = get_config(os_environ="CI_IIB_JOBS_TRIGGER_CONFIG", logger=logger)
 
     s3_bucket_operators_latest_iib_path = config_data.get("s3_bucket_operators_latest_iib_path")
     user_local_operators_latest_iib_filepath = config_data.get("local_operators_latest_iib_filepath")
