@@ -1380,12 +1380,12 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pyhelper-utils"
-version = "0.0.9"
+version = "0.0.10"
 description = "Collective utility functions for python projects"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "pyhelper_utils-0.0.9.tar.gz", hash = "sha256:5f51c51ec4b976935fa7cd64fc02645abec3b3d292dfabb03f60055801adaf4a"},
+    {file = "pyhelper_utils-0.0.10.tar.gz", hash = "sha256:723f87e0488a527b7f16315c1bd11d1bcbbff711bab0825125b46c8b41a63277"},
 ]
 
 [package.dependencies]
@@ -2132,4 +2132,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "0bc47a264e3eeee4c4df7e803ce4dd7bb8b35cec6cc319db144003f8f11601f5"
+content-hash = "f50572fa7c1e5416de4fc82bab62a5eb2a4d48f27b880bb512b682b136689a8a"
