@@ -35,8 +35,8 @@ def update_processed_version(
         processed_versions_file_path=processed_versions_file_path, logger=logger
     )
     processed_versions_file_content.setdefault(base_version, []).append(version)
-    processed_versions_file_content[base_version].sort(key=packaging.version.Version, reverse=True)
     processed_versions_file_content[base_version] = list(set(processed_versions_file_content[base_version]))
+    processed_versions_file_content[base_version].sort(key=packaging.version.Version, reverse=True)
     with open(processed_versions_file_path, "w") as fd:
         json.dump(processed_versions_file_content, fd)
 
