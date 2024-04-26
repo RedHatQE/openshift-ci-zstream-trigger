@@ -90,7 +90,6 @@ def process_addons_trigger():
 
 if __name__ == "__main__":
     APP.logger.info(f"Starting {APP.name} app")
-    APP.logger.info(f"Starting {APP.name} app")
 
     run_in_process(
         targets={
