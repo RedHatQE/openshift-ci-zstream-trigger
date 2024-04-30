@@ -2,6 +2,8 @@ from __future__ import annotations
 import json
 import logging
 import time
+import croniter
+import datetime
 
 from croniter import CroniterBadCronError
 from pyhelper_utils.general import stt, tts
@@ -15,8 +17,6 @@ from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
 from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
 
-import croniter
-import datetime
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
 LOG_PREFIX: str = "Zstream trigger:"
