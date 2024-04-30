@@ -174,7 +174,7 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
     )
 
     if cron_schedule := _config.get("cron_schedule"):
-        cron = croniter.croniter(cron_schedule, start_time=datetime.datetime.now(), day_or=False)
+        cron = get_cron_iter(cron_schedule=cron_schedule, config=_config, logger=logger)
         if not cron:
             return
 
@@ -184,7 +184,7 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
     while True:
         try:
             if cron:
-                run_interval = get_cron_run_interval(config=_config, logger=logger, cron=cron)
+                run_interval = int((cron.get_next(datetime.datetime) - datetime.datetime.now()).total_seconds())
 
             if run_interval > 0:
                 logger.info(f"{LOG_PREFIX} Sleeping for {stt(seconds=run_interval)}...")
@@ -197,16 +197,16 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
             time.sleep(DAYS_TO_SECONDS)
 
 
-def get_cron_run_interval(config: Dict, logger: logging.Logger, cron: croniter.croniter) -> int:
+def get_cron_iter(cron_schedule: str, config: Dict, logger: logging.Logger) -> croniter.croniter | None:
     try:
-        return int((cron.get_next(datetime.datetime) - datetime.datetime.now()).total_seconds())
-
+        return croniter.croniter(cron_schedule, start_time=datetime.datetime.now(), day_or=False)
     except CroniterBadCronError:
-        err_msg: str = f"Invalid cron schedule: {cron}"
+        err_msg: str = f"Invalid cron schedule: {cron_schedule}"
         logger.error(f"{LOG_PREFIX} {err_msg}")
         send_slack_message(
             message=err_msg,
             webhook_url=config.get("slack_errors_webhook_url"),
             logger=logger,
         )
-        return 0
+
+        return None
