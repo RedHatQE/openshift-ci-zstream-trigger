@@ -176,3 +176,7 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
         except Exception as ex:
             logger.warning(f"{LOG_PREFIX} Error: {ex}")
             time.sleep(DAYS_TO_SECONDS)
+
+
+def get_run_interval(config: Dict) -> str:
+    return config.get("run_interval", "24h")
