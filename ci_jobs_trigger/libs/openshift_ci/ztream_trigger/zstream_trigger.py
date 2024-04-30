@@ -2,10 +2,9 @@ from __future__ import annotations
 import json
 import logging
 import time
-import croniter
 import datetime
 
-from croniter import CroniterBadCronError
+from croniter import CroniterBadCronError, croniter
 from pyhelper_utils.general import stt, tts
 from typing import Dict, List
 
@@ -197,9 +196,9 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
             time.sleep(DAYS_TO_SECONDS)
 
 
-def get_cron_iter(cron_schedule: str, config: Dict, logger: logging.Logger) -> croniter.croniter | None:
+def get_cron_iter(cron_schedule: str, config: Dict, logger: logging.Logger) -> croniter | None:
     try:
-        return croniter.croniter(cron_schedule, start_time=datetime.datetime.now(), day_or=False)
+        return croniter(cron_schedule, start_time=datetime.datetime.now(), day_or=False)
     except CroniterBadCronError:
         err_msg: str = f"Invalid cron schedule: {cron_schedule}"
         logger.error(f"{LOG_PREFIX} {err_msg}")
