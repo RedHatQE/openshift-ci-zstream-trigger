@@ -41,7 +41,8 @@ python-gitlab = "^4.4.0"
 python-jenkins = "^1.8.2"
 redhat-qe-cloud-tools = "^1.0.47"
 pyaml-env = "^1.2.1"
-pyhelper-utils = "^0.0.13"
+croniter = "^2.0.5"
+pyhelper-utils = "^0.0.14"
 
 
 [tool.poetry.group.dev.dependencies]

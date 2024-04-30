@@ -2,7 +2,9 @@ from __future__ import annotations
 import json
 import logging
 import time
-from pyhelper_utils.general import tts
+
+from croniter import CroniterBadCronError
+from pyhelper_utils.general import stt, tts
 from typing import Dict, List
 
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
@@ -12,6 +14,9 @@ import packaging.version
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
 from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
+
+import croniter
+import datetime
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
 LOG_PREFIX: str = "Zstream trigger:"
@@ -161,22 +166,45 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
 
 
 def monitor_and_trigger(logger: logging.Logger) -> None:
+    cron = None
+    run_interval = 0
+    _config = get_config(
+        os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
+        logger=logger,
+    )
+
+    if cron_schedule := _config.get("cron_schedule"):
+        cron = croniter.croniter(cron_schedule, start_time=datetime.datetime.now(), day_or=False)
+        if not cron:
+            return
+
+    else:
+        run_interval = tts(ts=_config.get("run_interval", "24h"))
+
     while True:
         try:
-            _config = get_config(
-                os_environ=OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
-                logger=logger,
-            )
-            run_interval = _config.get("run_interval", "24h")
-
-            process_and_trigger_jobs(logger=logger)
-            logger.info(f"{LOG_PREFIX} Sleeping for {run_interval}...")
-            time.sleep(tts(ts=run_interval))
+            if cron:
+                run_interval = get_run_interval(config=_config, logger=logger, cron=cron)
+            # process_and_trigger_jobs(logger=logger)
+            if run_interval > 0:
+                logger.info(f"{LOG_PREFIX} Sleeping for {stt(seconds=run_interval)}...")
+                time.sleep(run_interval)
 
         except Exception as ex:
             logger.warning(f"{LOG_PREFIX} Error: {ex}")
             time.sleep(DAYS_TO_SECONDS)
 
 
-def get_run_interval(config: Dict) -> str:
-    return config.get("run_interval", "24h")
+def get_run_interval(config: Dict, logger: logging.Logger, cron: croniter.croniter) -> int:
+    try:
+        return int((cron.get_next(datetime.datetime) - datetime.datetime.now()).total_seconds())
+
+    except CroniterBadCronError:
+        err_msg: str = f"Invalid cron schedule: {cron}"
+        logger.error(f"{LOG_PREFIX} {err_msg}")
+        send_slack_message(
+            message=err_msg,
+            webhook_url=config.get("slack_errors_webhook_url"),
+            logger=logger,
+        )
+        return 0
