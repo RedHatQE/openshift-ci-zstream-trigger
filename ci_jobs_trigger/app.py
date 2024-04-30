@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 from flask import Flask
 from flask import request
 from simple_logger.logger import get_logger
@@ -13,9 +16,11 @@ from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger import (
     process_and_trigger_jobs,
     monitor_and_trigger,
 )
+from ci_jobs_trigger.libs.operators_iib_trigger.iib_trigger import run_iib_update
 from ci_jobs_trigger.utils.general import (
     get_config,
     process_webhook_exception,
+    run_in_process,
 )
 
 APP = Flask("ci-jobs-trigger")
@@ -84,18 +89,15 @@ def process_addons_trigger():
 
 
 if __name__ == "__main__":
-    monitor_and_trigger(logger=APP.logger)
-    # import ipdb; ipdb.set_trace()
-    #
-    # run_in_process(
-    #     targets={
-    #         monitor_and_trigger: {"logger": APP.logger},
-    #         # run_iib_update: {"logger": APP.logger, "tmp_dir": tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")},
-    #     }
-    # )
-    # APP.logger.info(f"Starting {APP.name} app")
-    # APP.run(
-    #     port=int(os.environ.get("CI_JOBS_TRIGGER_LISTEN_PORT", 5000)),
-    #     host=os.environ.get("CI_JOBS_TRIGGER_LISTEN_IP", "127.0.0.1"),
-    #     use_reloader=True if os.environ.get("CI_JOBS_TRIGGER_USE_RELOAD") else False,
-    # )
+    run_in_process(
+        targets={
+            monitor_and_trigger: {"logger": APP.logger},
+            run_iib_update: {"logger": APP.logger, "tmp_dir": tempfile.mkdtemp(dir="/tmp", prefix="ci-jobs-trigger")},
+        }
+    )
+    APP.logger.info(f"Starting {APP.name} app")
+    APP.run(
+        port=int(os.environ.get("CI_JOBS_TRIGGER_LISTEN_PORT", 5000)),
+        host=os.environ.get("CI_JOBS_TRIGGER_LISTEN_IP", "127.0.0.1"),
+        use_reloader=True if os.environ.get("CI_JOBS_TRIGGER_USE_RELOAD") else False,
+    )

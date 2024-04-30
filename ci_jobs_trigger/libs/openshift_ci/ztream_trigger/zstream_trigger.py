@@ -184,18 +184,20 @@ def monitor_and_trigger(logger: logging.Logger) -> None:
     while True:
         try:
             if cron:
-                run_interval = get_run_interval(config=_config, logger=logger, cron=cron)
-            # process_and_trigger_jobs(logger=logger)
+                run_interval = get_cron_run_interval(config=_config, logger=logger, cron=cron)
+
             if run_interval > 0:
                 logger.info(f"{LOG_PREFIX} Sleeping for {stt(seconds=run_interval)}...")
                 time.sleep(run_interval)
+
+            process_and_trigger_jobs(logger=logger)
 
         except Exception as ex:
             logger.warning(f"{LOG_PREFIX} Error: {ex}")
             time.sleep(DAYS_TO_SECONDS)
 
 
-def get_run_interval(config: Dict, logger: logging.Logger, cron: croniter.croniter) -> int:
+def get_cron_run_interval(config: Dict, logger: logging.Logger, cron: croniter.croniter) -> int:
     try:
         return int((cron.get_next(datetime.datetime) - datetime.datetime.now()).total_seconds())
 
