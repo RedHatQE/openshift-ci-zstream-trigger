@@ -153,11 +153,13 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
-                logger.info(f"{LOG_PREFIX} Version {_wanted_version} already processed, skipping")
+                logger.info(f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} already processed, skipping")
                 trigger_res[_version] = "Already processed"
                 continue
 
-            logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {_jobs}")
+            logger.info(
+                f"{LOG_PREFIX} New Z-stream version {_latest_version}:{_version_channel} found, triggering jobs: {_jobs}"
+            )
             if trigger_jobs(config=config, jobs=_jobs, logger=logger):
                 update_processed_version(
                     base_version=_wanted_version,
