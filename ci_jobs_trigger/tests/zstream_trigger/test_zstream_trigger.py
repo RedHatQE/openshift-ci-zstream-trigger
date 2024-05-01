@@ -53,6 +53,7 @@ def get_config_mocker(mocker):
 def config_dict(get_config_mocker, base_config_dict):
     base_config_dict["versions"] = {
         "4.13": ["<openshift-ci-test-name-4.13>"],
+        "4.13-rc": ["<openshift-ci-test-name-4.13-rc>"],
     }
     get_config_mocker.return_value = base_config_dict
 
@@ -85,7 +86,7 @@ def test_process_and_trigger_jobs_config_with_empty_version(config_dict_empty_ve
 
 
 def test_process_and_trigger_jobs(config_dict, job_trigger_and_get_versions_mocker):
-    assert process_and_trigger_jobs(logger=LOGGER)
+    assert process_and_trigger_jobs(logger=LOGGER) == {"4.13": "Triggered", "4.13-rc": "Triggered"}
 
 
 def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_trigger_and_get_versions_mocker):
@@ -94,20 +95,11 @@ def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_tri
         return_value={"4.13": ["4.13.34", "4.13.33"]},
     )
 
-    assert process_and_trigger_jobs(logger=LOGGER) == {"4.13": "Already processed"}
-
-
-def test_process_and_trigger_jobs_new_version(mocker, config_dict, job_trigger_and_get_versions_mocker):
-    mocker.patch(
-        f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
-        return_value={"4.13": ["4.13.33", "4.13.32"]},
-    )
-
-    assert process_and_trigger_jobs(logger=LOGGER)
+    assert process_and_trigger_jobs(logger=LOGGER) == {"4.13": "Already processed", "4.13-rc": "Triggered"}
 
 
 def test_process_and_trigger_jobs_set_version(config_dict, job_trigger_and_get_versions_mocker):
-    assert process_and_trigger_jobs(version="4.13", logger=LOGGER)
+    assert process_and_trigger_jobs(version="4.13", logger=LOGGER) == {"4.13": True}
 
 
 def test_process_and_trigger_jobs_pass_version(mocker, config_dict, job_trigger_and_get_versions_mocker):
@@ -116,7 +108,7 @@ def test_process_and_trigger_jobs_pass_version(mocker, config_dict, job_trigger_
         return_value={"4.13": ["4.13.33", "4.13.32"]},
     )
 
-    assert process_and_trigger_jobs(logger=LOGGER, version="4.13")
+    assert process_and_trigger_jobs(logger=LOGGER, version="4.13") == {"4.13": True}
 
 
 def test_process_and_trigger_jobs_pass_version_not_in_config(mocker, config_dict, job_trigger_and_get_versions_mocker):

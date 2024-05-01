@@ -139,21 +139,28 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 trigger_res[_version] = "No jobs found"
                 continue
 
-            _latest_version = get_accepted_cluster_versions()["stable"][_version][0]
+            if "-" in _version:
+                _wanted_version, _version_channel = _version.split("-")
+            else:
+                _wanted_version = _version
+                _version_channel = "stable"
+
+            _all_versions = get_accepted_cluster_versions()
+            _latest_version = _all_versions.get(_version_channel)[_wanted_version][0]
             if already_processed_version(
                 base_version=_version,
                 new_version=_latest_version,
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
-                logger.info(f"{LOG_PREFIX} Version {_version} already processed, skipping")
+                logger.info(f"{LOG_PREFIX} Version {_wanted_version} already processed, skipping")
                 trigger_res[_version] = "Already processed"
                 continue
 
             logger.info(f"{LOG_PREFIX} New Z-stream version {_latest_version} found, triggering jobs: {_jobs}")
             if trigger_jobs(config=config, jobs=_jobs, logger=logger):
                 update_processed_version(
-                    base_version=_version,
+                    base_version=_wanted_version,
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
