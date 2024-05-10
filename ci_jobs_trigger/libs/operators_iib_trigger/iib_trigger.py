@@ -108,9 +108,7 @@ def get_new_iib(config_data, logger):
     new_trigger_data = False
     data_from_file = get_iib_data_from_file(config_data=config_data)
     new_data = copy.deepcopy(data_from_file)
-    if (ci_jobs := config_data.get("ci_jobs", {})) is None:
-        logger.error(f"{LOG_PREFIX} No ci_jobs found in config")
-        return {}
+    ci_jobs = config_data["ci_jobs"]
 
     for _ocp_version, _jobs_data in ci_jobs.items():
         if _jobs_data:
@@ -208,6 +206,16 @@ def get_iib_data_from_file(config_data):
         return {}
 
 
+def get_jobs_name_from_config(ci_jobs):
+    ci_jobs_name = []
+    for _, _jobs_data in ci_jobs.items():
+        if _jobs_data:
+            for _ci_job in _jobs_data:
+                ci_jobs_name.append(_ci_job["name"])
+
+    return ci_jobs_name
+
+
 def verify_s3_or_local_file(
     s3_bucket_operators_latest_iib_path,
     user_local_operators_latest_iib_filepath,
@@ -260,27 +268,33 @@ def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
             ):
                 return False
 
+    if (ci_jobs := config_data.get("ci_jobs", {})) is None:
+        logger.error(f"{LOG_PREFIX} No ci_jobs found in config")
+        return {}
+
     trigger_dict = get_new_iib(config_data=config_data, logger=logger)
+    ci_jobs_name = get_jobs_name_from_config(ci_jobs=ci_jobs)
 
     failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():
         for _job_name, _job_dict in _job_data.items():
-            operators = _job_dict["operators"]
-            if any([_value["new-iib"] for _value in operators.values()]):
-                try:
-                    trigger_ci_job(
-                        job=_job_name,
-                        product=", ".join(operators.keys()),
-                        _type="operator",
-                        trigger_dict=trigger_dict,
-                        ci=_job_dict["ci"],
-                        logger=logger,
-                        config_data=config_data,
-                        operator_iib=True,
-                    )
-                except AddonsWebhookTriggerError:
-                    failed_triggered_jobs.setdefault(_job_dict["ci"], []).append(_job_name)
-                    continue
+            if _job_name in ci_jobs_name:
+                operators = _job_dict["operators"]
+                if any([_value["new-iib"] for _value in operators.values()]):
+                    try:
+                        trigger_ci_job(
+                            job=_job_name,
+                            product=", ".join(operators.keys()),
+                            _type="operator",
+                            trigger_dict=trigger_dict,
+                            ci=_job_dict["ci"],
+                            logger=logger,
+                            config_data=config_data,
+                            operator_iib=True,
+                        )
+                    except AddonsWebhookTriggerError:
+                        failed_triggered_jobs.setdefault(_job_dict["ci"], []).append(_job_name)
+                        continue
     return failed_triggered_jobs
 
 
