@@ -108,9 +108,8 @@ def get_new_iib(config_data, logger):
     new_trigger_data = False
     data_from_file = get_iib_data_from_file(config_data=config_data)
     new_data = copy.deepcopy(data_from_file)
-    ci_jobs = config_data["ci_jobs"]
 
-    for _ocp_version, _jobs_data in ci_jobs.items():
+    for _ocp_version, _jobs_data in config_data.get("ci_jobs", {}).items():
         if _jobs_data:
             for _ci_job in _jobs_data:
                 job_name = _ci_job["name"]
