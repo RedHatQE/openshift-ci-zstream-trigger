@@ -162,7 +162,7 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             )
             if trigger_jobs(config=config, jobs=_jobs, logger=logger):
                 update_processed_version(
-                    base_version=_wanted_version,
+                    base_version=_version,
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
