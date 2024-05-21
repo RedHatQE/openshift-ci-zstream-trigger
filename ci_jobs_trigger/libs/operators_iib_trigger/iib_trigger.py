@@ -206,13 +206,7 @@ def get_iib_data_from_file(config_data):
 
 
 def get_jobs_name_from_config(ci_jobs):
-    ci_jobs_name = []
-    for _, _jobs_data in ci_jobs.items():
-        if _jobs_data:
-            for _ci_job in _jobs_data:
-                ci_jobs_name.append(_ci_job["name"])
-
-    return ci_jobs_name
+    return [job["name"] for jobs in ci_jobs.values() if jobs for job in jobs]
 
 
 def verify_s3_or_local_file(

@@ -28,7 +28,6 @@ ci_jobs:
           <product name 2>: <operator name 2>
 
   <openshift version 2>:
-    jobs:
       - name: <jenkins job name>
         ci: jenkins
         products:
