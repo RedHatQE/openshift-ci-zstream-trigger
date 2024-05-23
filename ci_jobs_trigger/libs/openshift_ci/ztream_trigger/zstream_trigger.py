@@ -55,7 +55,7 @@ def already_processed_version(
     return False
 
 
-def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
+def trigger_jobs(config: Dict, jobs: List, zstream_version: str, logger: logging.Logger) -> bool:
     failed_triggers_jobs: List = []
     successful_triggers_jobs: List = []
     if not jobs:
@@ -78,7 +78,7 @@ def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
                 failed_triggers_jobs.append(job)
 
         if successful_triggers_jobs:
-            success_msg: str = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs}"
+            success_msg: str = f"Triggered {len(successful_triggers_jobs)} jobs: {successful_triggers_jobs} for version {zstream_version}"
             logger.info(f"{LOG_PREFIX} {success_msg}")
             send_slack_message(
                 message=success_msg,
@@ -88,7 +88,7 @@ def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
             return True
 
         if failed_triggers_jobs:
-            err_msg: str = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs}"
+            err_msg: str = f"Failed to trigger {len(failed_triggers_jobs)} jobs: {failed_triggers_jobs} for version {zstream_version}"
             logger.info(f"{LOG_PREFIX} {err_msg}")
             send_slack_message(
                 message=err_msg,
@@ -120,7 +120,9 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             raise ValueError(f"Version {version} not found in config.yaml")
 
         logger.info(f"{LOG_PREFIX} Triggering all jobs from config file under version {version}")
-        triggered = trigger_jobs(config=config, jobs=versions_from_config[version], logger=logger)
+        triggered = trigger_jobs(
+            config=config, jobs=versions_from_config[version], zstream_version=version, logger=logger
+        )
         trigger_res[version] = triggered
         return trigger_res
 
@@ -160,7 +162,7 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             logger.info(
                 f"{LOG_PREFIX} New Z-stream version {_latest_version}:{_version_channel} found, triggering jobs: {_jobs}"
             )
-            if trigger_jobs(config=config, jobs=_jobs, logger=logger):
+            if trigger_jobs(config=config, jobs=_jobs, zstream_version=_latest_version, logger=logger):
                 update_processed_version(
                     base_version=_version,
                     version=str(_latest_version),
