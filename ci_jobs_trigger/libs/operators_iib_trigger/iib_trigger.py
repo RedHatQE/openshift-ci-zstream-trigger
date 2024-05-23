@@ -262,12 +262,11 @@ def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
         return {}
 
     trigger_dict = get_new_iib(config_data=config_data, logger=logger)
-    ci_jobs_name = [job["name"] for jobs in ci_jobs.values() if jobs for job in jobs]
 
     failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():
         for _job_name, _job_dict in _job_data.items():
-            if _job_name in ci_jobs_name:
+            if _job_name in [job["name"] for jobs in ci_jobs.values() if jobs for job in jobs]:
                 operators = _job_dict["operators"]
                 if any([_value["new-iib"] for _value in operators.values()]):
                     try:
