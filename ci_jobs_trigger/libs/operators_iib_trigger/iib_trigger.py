@@ -205,10 +205,6 @@ def get_iib_data_from_file(config_data):
         return {}
 
 
-def get_jobs_name_from_config(ci_jobs):
-    return [job["name"] for jobs in ci_jobs.values() if jobs for job in jobs]
-
-
 def verify_s3_or_local_file(
     s3_bucket_operators_latest_iib_path,
     user_local_operators_latest_iib_filepath,
@@ -266,7 +262,7 @@ def fetch_update_iib_and_trigger_jobs(logger, tmp_dir, config_dict=None):
         return {}
 
     trigger_dict = get_new_iib(config_data=config_data, logger=logger)
-    ci_jobs_name = get_jobs_name_from_config(ci_jobs=ci_jobs)
+    ci_jobs_name = [job["name"] for jobs in ci_jobs.values() if jobs for job in jobs]
 
     failed_triggered_jobs = {}
     for _, _job_data in trigger_dict.items():
