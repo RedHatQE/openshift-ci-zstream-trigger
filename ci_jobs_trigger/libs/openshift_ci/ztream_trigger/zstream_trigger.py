@@ -55,7 +55,7 @@ def already_processed_version(
     return False
 
 
-def trigger_jobs(config: Dict, jobs: List, zstream_version: str, logger: logging.Logger) -> bool:
+def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger, zstream_version: str) -> bool:
     failed_triggers_jobs: List = []
     successful_triggers_jobs: List = []
     if not jobs:
