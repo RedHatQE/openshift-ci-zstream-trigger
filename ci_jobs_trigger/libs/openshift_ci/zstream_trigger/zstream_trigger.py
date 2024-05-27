@@ -121,7 +121,7 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
 
         logger.info(f"{LOG_PREFIX} Triggering all jobs from config file under version {version}")
         triggered = trigger_jobs(
-            config=config, jobs=versions_from_config[version], zstream_version=version, logger=logger
+            config=config, jobs=versions_from_config[version], logger=logger, zstream_version=version
         )
         trigger_res[version] = triggered
         return trigger_res
@@ -162,7 +162,7 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             logger.info(
                 f"{LOG_PREFIX} New Z-stream version {_latest_version}:{_version_channel} found, triggering jobs: {_jobs}"
             )
-            if trigger_jobs(config=config, jobs=_jobs, zstream_version=_latest_version, logger=logger):
+            if trigger_jobs(config=config, jobs=_jobs, logger=logger, zstream_version=_latest_version):
                 update_processed_version(
                     base_version=_version,
                     version=str(_latest_version),

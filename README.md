@@ -4,7 +4,7 @@ A Flask-based webhook server to trigger ci jobs.
 
 ## Supported triggering flows:
 
-- [ztream_trigger](ci_jobs_trigger/libs/openshift_ci/ztream_trigger) - Trigger ci jobs on a release of new OCP z-stream
+- [zstream_trigger](ci_jobs_trigger/libs/openshift_ci/zstream_trigger) - Trigger ci jobs on a release of new OCP z-stream
 - [re_trigger](ci_jobs_trigger/libs/openshift_ci/re_trigger) - Re-trigger ci job on failure
 - [operators_iib_trigger](ci_jobs_trigger/libs/operators_iib_trigger) - Trigger ci job on new operator index image
 - [addons_webhook_trigger](ci_jobs_trigger/libs/addons_webhook_trigger) - Trigger ci job when a new addon is released

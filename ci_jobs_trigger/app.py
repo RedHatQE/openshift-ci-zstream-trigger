@@ -11,7 +11,7 @@ from ci_jobs_trigger.libs.addons_webhook_trigger.addons_webhook_trigger import (
     ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR,
 )
 from ci_jobs_trigger.libs.openshift_ci.re_trigger.re_trigger import JobTriggering
-from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.zstream_trigger import (
+from ci_jobs_trigger.libs.openshift_ci.zstream_trigger.zstream_trigger import (
     OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
     process_and_trigger_jobs,
     monitor_and_trigger,
