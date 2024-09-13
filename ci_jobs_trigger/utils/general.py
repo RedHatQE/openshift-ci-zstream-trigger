@@ -3,6 +3,7 @@ import os
 from multiprocessing import Process
 
 import requests
+import gitlab
 from pyaml_env import parse_config
 
 
@@ -63,3 +64,9 @@ def process_webhook_exception(logger, ex, route, slack_errors_webhook_url=None):
         send_slack_message(message=err_msg, webhook_url=slack_errors_webhook_url, logger=logger)
 
     return "Process failed"
+
+
+def get_gitlab_api(url, token):
+    gitlab_api = gitlab.Gitlab(url=url, private_token=token, ssl_verify=False)
+    gitlab_api.auth()
+    return gitlab_api

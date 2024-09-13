@@ -9,12 +9,14 @@ from pyhelper_utils.general import stt, tts
 from typing import Dict, List
 
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
+from ocm_python_wrapper.ocm_client import OCMPythonClient
 from semver import Version
 import packaging.version
 
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, send_slack_message
-from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
+from ci_jobs_trigger.libs.openshift_ci.utils.general import get_gitlab_api, openshift_ci_trigger_job
+from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.rosa_utils import get_rosa_versions
 
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
@@ -55,7 +57,46 @@ def already_processed_version(
     return False
 
 
+<<<<<<< HEAD:ci_jobs_trigger/libs/openshift_ci/zstream_trigger/zstream_trigger.py
 def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger, zstream_version: str) -> bool:
+=======
+def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: str, logger: logging.Logger) -> bool:
+    processed_versions_file_path = config["processed_versions_file_path"]
+    processed_versions_file_content = processed_versions_file(
+        processed_versions_file_path=processed_versions_file_path, logger=logger
+    )
+    channel_version = f"{channel}-{version}"
+    enable_channel_version_key = f"{channel_version}-{ocm_env}-enable"
+    if processed_versions_file_content.get(enable_channel_version_key):
+        return True
+
+    api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
+    project = api.projects.get(project)
+    project_file_content = project.files.get(file_path=f"config/{'prod' if ocm_env=='production' else ocm_env}", ref="master")
+    yaml_content = yaml.safe_load(project_file_content.decode().decode('utf-8'))
+    for channel_groups in data.get("channel_groups", []):
+        if channel_version in channel_groups.get("channels", []):
+            processed_versions_file_content[enable_channel_version_key] = True
+            with open(processed_versions_file_path, "w") as fd:
+                json.dump(processed_versions_file_content, fd)
+            return True
+
+    return False
+
+
+
+def get_all_rosa_versions(ocm_token: str, ocm_env: str, channel:str, aws_region: str) -> Dict[str, Dict[str, List[str]]]:
+    ocm_client = OCMPythonClient(
+        token=ocm_token,
+        endpoint="https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token",
+        api_host=ocm_env,
+        discard_unknown_keys=True,
+        ).client
+    return get_rosa_versions(ocm_client=ocm_client, aws_region=aws_region, channel_group=channel)
+
+
+def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
+>>>>>>> 7f874b4 (support for trigger rosa-jobs):ci_jobs_trigger/libs/openshift_ci/ztream_trigger/zstream_trigger.py
     failed_triggers_jobs: List = []
     successful_triggers_jobs: List = []
     if not jobs:
@@ -141,22 +182,36 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 trigger_res[_version] = "No jobs found"
                 continue
 
+            _rosa_env: str = ""
+            if "___" in _version:
+                _version, _rosa_env = _version.split("___")[:2]
+
             if "-" in _version:
                 _wanted_version, _version_channel = _version.split("-")
+                _version_channel = "candidate" if _rosa_env and _version_channel in ['rc', 'ec'] else _version_channel
             else:
                 _wanted_version = _version
                 _version_channel = "stable"
 
-            _all_versions = get_accepted_cluster_versions()
+            _base_version = f"{_version}-{_rosa_env}" if _rosa_env else _version
+
+            if _rosa_env and config.get("gitlab_project"):
+                if not is_rosa_version_enabed(config=config, version=_wanted_version, channel=_version_channel, ocm_env=_rosa_env, logger=logger):
+                    logger.info(
+                        f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} not enabled for ROSA {_rosa_env}, skipping")
+                    trigger_res[_base_version] = "Not enabled for ROsA"
+                    continue
+
+            _all_versions = get_all_rosa_versions(ocm_env=_rosa_env, ocm_token=config["ocm_token"], channel=_version_channel, aws_region=config["aws_region"]) if _rosa_env else get_accepted_cluster_versions()
             _latest_version = _all_versions.get(_version_channel)[_wanted_version][0]
             if already_processed_version(
-                base_version=_version,
+                base_version=_base_version,
                 new_version=_latest_version,
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
                 logger.info(f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} already processed, skipping")
-                trigger_res[_version] = "Already processed"
+                trigger_res[_base_version] = "Already processed"
                 continue
 
             logger.info(
@@ -164,12 +219,16 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             )
             if trigger_jobs(config=config, jobs=_jobs, logger=logger, zstream_version=_latest_version):
                 update_processed_version(
+<<<<<<< HEAD:ci_jobs_trigger/libs/openshift_ci/zstream_trigger/zstream_trigger.py
                     base_version=_version,
+=======
+                    base_version=_base_version,
+>>>>>>> 7f874b4 (support for trigger rosa-jobs):ci_jobs_trigger/libs/openshift_ci/ztream_trigger/zstream_trigger.py
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
                 )
-                trigger_res[_version] = "Triggered"
+                trigger_res[_base_version] = "Triggered"
                 continue
 
         return trigger_res

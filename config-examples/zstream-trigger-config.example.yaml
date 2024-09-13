@@ -2,11 +2,20 @@
 trigger_token: <openshift-ci trigger token>
 processed_versions_file_path: <path to processed versions file>
 
+# Mandatory - If triggering jobs for rosa versions
+ocm_token: <ocm-token>
+aws_region: <aws-region>
+
 # Optional
 slack_webhook_url: <slack webhook url to post job status>
 slack_errors_webhook_url: <slack webhook url to post code errors>
 run_interval: 24h # can be s/m/h
 cron_schedule: "0 0 * * *" # cron schedule for the trigger
+
+# Optional, Required for checking if rosa channel-version is enabled for OCM or not
+gitlab_project: <gitlab-username/projectname>
+gitlab_url: <gitlab-instance-url>
+gitlab_token: <gitlab-token>
 
 versions:
   "4.14-rc": # Will take latest 4.14 RC version
@@ -19,6 +28,16 @@ versions:
     - <openshift-ci-test-name-2>
     - <openshift-ci-test-name-3>
   "4.12":
+    - <openshift-ci-test-name-1>
+    - <openshift-ci-test-name-2>
+    - <openshift-ci-test-name-3>
+
+  "4.16-rc___stage___": # Will take latest 4.16 ROSA version for RC (candidate) channel-group in OCM stage
+    - <openshift-ci-test-name-1>
+    - <openshift-ci-test-name-2>
+    - <openshift-ci-test-name-3>
+
+  "4.16___production___": # Will take latest 4.16 ROSA version for stable channel-group in OCM production
     - <openshift-ci-test-name-1>
     - <openshift-ci-test-name-2>
     - <openshift-ci-test-name-3>
