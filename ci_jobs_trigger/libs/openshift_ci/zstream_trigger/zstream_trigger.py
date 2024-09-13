@@ -70,8 +70,10 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
 
     api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
     project = api.projects.get(config["gitlab_project"])
-    project_file_content = project.files.get(file_path=f"config/{'prod' if ocm_env=='production' else ocm_env}.yaml", ref="master")
-    file_yaml_content = yaml.safe_load(project_file_content.decode().decode('utf-8'))
+    project_file_content = project.files.get(
+        file_path=f"config/{'prod' if ocm_env == 'production' else ocm_env}.yaml", ref="master"
+    )
+    file_yaml_content = yaml.safe_load(project_file_content.decode().decode("utf-8"))
     for channel_groups in file_yaml_content.get("channel_groups", []):
         if channel_version in channel_groups.get("channels", []):
             processed_versions_file_content[enable_channel_version_key] = True
@@ -82,14 +84,15 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
     return False
 
 
-
-def get_all_rosa_versions(ocm_token: str, ocm_env: str, channel:str, aws_region: str) -> Dict[str, Dict[str, List[str]]]:
+def get_all_rosa_versions(
+    ocm_token: str, ocm_env: str, channel: str, aws_region: str
+) -> Dict[str, Dict[str, List[str]]]:
     ocm_client = OCMPythonClient(
         token=ocm_token,
         endpoint="https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token",
         api_host=ocm_env,
         discard_unknown_keys=True,
-        ).client
+    ).client
     return get_rosa_versions(ocm_client=ocm_client, aws_region=aws_region, channel_group=channel)
 
 
@@ -185,7 +188,7 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
 
             if "-" in _version:
                 _wanted_version, _version_channel = _version.split("-")
-                _version_channel = "candidate" if _rosa_env and _version_channel in ['rc', 'ec'] else _version_channel
+                _version_channel = "candidate" if _rosa_env and _version_channel in ["rc", "ec"] else _version_channel
             else:
                 _wanted_version = _version
                 _version_channel = "stable"
@@ -193,13 +196,25 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             _base_version = f"{_version}-{_rosa_env}" if _rosa_env else _version
 
             if _rosa_env and config.get("gitlab_project"):
-                if not is_rosa_version_enabed(config=config, version=_wanted_version, channel=_version_channel, ocm_env=_rosa_env, logger=logger):
+                if not is_rosa_version_enabed(
+                    config=config, version=_wanted_version, channel=_version_channel, ocm_env=_rosa_env, logger=logger
+                ):
                     logger.info(
-                        f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} not enabled for ROSA {_rosa_env}, skipping")
+                        f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} not enabled for ROSA {_rosa_env}, skipping"
+                    )
                     trigger_res[_base_version] = "Not enabled for ROsA"
                     continue
 
-            _all_versions = get_all_rosa_versions(ocm_env=_rosa_env, ocm_token=config["ocm_token"], channel=_version_channel, aws_region=config["aws_region"]) if _rosa_env else get_accepted_cluster_versions()
+            _all_versions = (
+                get_all_rosa_versions(
+                    ocm_env=_rosa_env,
+                    ocm_token=config["ocm_token"],
+                    channel=_version_channel,
+                    aws_region=config["aws_region"],
+                )
+                if _rosa_env
+                else get_accepted_cluster_versions()
+            )
             _latest_version = _all_versions.get(_version_channel)[_wanted_version][0]
             if already_processed_version(
                 base_version=_base_version,
@@ -207,12 +222,14 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 processed_versions_file_path=_processed_versions_file_path,
                 logger=logger,
             ):
-                logger.info(f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} already processed, skipping")
+                logger.info(
+                    f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} {_rosa_env} already processed, skipping"
+                )
                 trigger_res[_base_version] = "Already processed"
                 continue
 
             logger.info(
-                f"{LOG_PREFIX} New Z-stream version {_latest_version}:{_version_channel} found, triggering jobs: {_jobs}"
+                f"{LOG_PREFIX} New Z-stream version {_latest_version}:{_version_channel} {_rosa_env} found, triggering jobs: {_jobs}"
             )
             if trigger_jobs(config=config, jobs=_jobs, logger=logger, zstream_version=_latest_version):
                 update_processed_version(
