@@ -3,6 +3,7 @@ import json
 import logging
 import time
 import datetime
+import yaml
 
 from croniter import CroniterBadCronError, croniter
 from pyhelper_utils.general import stt, tts
@@ -14,9 +15,9 @@ from semver import Version
 import packaging.version
 
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
-from ci_jobs_trigger.utils.general import get_config, send_slack_message
-from ci_jobs_trigger.libs.openshift_ci.utils.general import get_gitlab_api, openshift_ci_trigger_job
-from ci_jobs_trigger.libs.openshift_ci.ztream_trigger.rosa_utils import get_rosa_versions
+from ci_jobs_trigger.utils.general import get_config, get_gitlab_api, send_slack_message
+from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
+from ci_jobs_trigger.libs.openshift_ci.zstream_trigger.rosa_utils import get_rosa_versions
 
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
@@ -57,9 +58,6 @@ def already_processed_version(
     return False
 
 
-<<<<<<< HEAD:ci_jobs_trigger/libs/openshift_ci/zstream_trigger/zstream_trigger.py
-def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger, zstream_version: str) -> bool:
-=======
 def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: str, logger: logging.Logger) -> bool:
     processed_versions_file_path = config["processed_versions_file_path"]
     processed_versions_file_content = processed_versions_file(
@@ -71,10 +69,10 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
         return True
 
     api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
-    project = api.projects.get(project)
-    project_file_content = project.files.get(file_path=f"config/{'prod' if ocm_env=='production' else ocm_env}", ref="master")
-    yaml_content = yaml.safe_load(project_file_content.decode().decode('utf-8'))
-    for channel_groups in data.get("channel_groups", []):
+    project = api.projects.get(config["gitlab_project"])
+    project_file_content = project.files.get(file_path=f"config/{'prod' if ocm_env=='production' else ocm_env}.yaml", ref="master")
+    file_yaml_content = yaml.safe_load(project_file_content.decode().decode('utf-8'))
+    for channel_groups in file_yaml_content.get("channel_groups", []):
         if channel_version in channel_groups.get("channels", []):
             processed_versions_file_content[enable_channel_version_key] = True
             with open(processed_versions_file_path, "w") as fd:
@@ -95,8 +93,7 @@ def get_all_rosa_versions(ocm_token: str, ocm_env: str, channel:str, aws_region:
     return get_rosa_versions(ocm_client=ocm_client, aws_region=aws_region, channel_group=channel)
 
 
-def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger) -> bool:
->>>>>>> 7f874b4 (support for trigger rosa-jobs):ci_jobs_trigger/libs/openshift_ci/ztream_trigger/zstream_trigger.py
+def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger, zstream_version: str) -> bool:
     failed_triggers_jobs: List = []
     successful_triggers_jobs: List = []
     if not jobs:
@@ -219,18 +216,13 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             )
             if trigger_jobs(config=config, jobs=_jobs, logger=logger, zstream_version=_latest_version):
                 update_processed_version(
-<<<<<<< HEAD:ci_jobs_trigger/libs/openshift_ci/zstream_trigger/zstream_trigger.py
-                    base_version=_version,
-=======
                     base_version=_base_version,
->>>>>>> 7f874b4 (support for trigger rosa-jobs):ci_jobs_trigger/libs/openshift_ci/ztream_trigger/zstream_trigger.py
                     version=str(_latest_version),
                     processed_versions_file_path=_processed_versions_file_path,
                     logger=logger,
                 )
                 trigger_res[_base_version] = "Triggered"
                 continue
-
         return trigger_res
 
 

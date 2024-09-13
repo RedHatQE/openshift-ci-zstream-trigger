@@ -3,7 +3,7 @@ trigger_token: <openshift-ci trigger token>
 processed_versions_file_path: <path to processed versions file>
 
 # Mandatory - If triggering jobs for rosa versions
-ocm_token: <ocm-token>
+ocm_token: !ENV "${OCM_TOKEN}"
 aws_region: <aws-region>
 
 # Optional
