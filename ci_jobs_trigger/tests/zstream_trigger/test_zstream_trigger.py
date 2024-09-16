@@ -7,12 +7,14 @@ from ci_jobs_trigger.libs.openshift_ci.zstream_trigger.zstream_trigger import (
     OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR,
     process_and_trigger_jobs,
 )
-from ci_jobs_trigger.tests.zstream_trigger.manifests.versions import VERSIONS
+from ci_jobs_trigger.tests.zstream_trigger.manifests.ocp_versions import OCP_VERSIONS
+from ci_jobs_trigger.tests.zstream_trigger.manifests.rosa_versions import ROSA_VERSIONS
 
 LOGGER = get_logger("test_zstream_trigger")
 
 LIBS_ZSTREAM_TRIGGER_PATH = "ci_jobs_trigger.libs.openshift_ci.zstream_trigger.zstream_trigger"
 GET_ACCEPTED_CLUSTER_VERSIONS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.get_accepted_cluster_versions"
+GET_ALL_ROSA_VERSIONS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.get_rosa_versions"
 TRIGGER_JOBS_PATH = f"{LIBS_ZSTREAM_TRIGGER_PATH}.openshift_ci_trigger_job"
 
 
@@ -23,8 +25,9 @@ pytestmark = pytest.mark.usefixtures("send_slack_message_mock")
 def job_trigger_and_get_versions_mocker(mocker):
     mocker.patch(
         GET_ACCEPTED_CLUSTER_VERSIONS_PATH,
-        return_value=VERSIONS,
+        return_value=OCP_VERSIONS,
     )
+    mocker.patch(GET_ALL_ROSA_VERSIONS_PATH, return_value=ROSA_VERSIONS)
     openshift_ci_trigger_job_mocker = mocker.patch(TRIGGER_JOBS_PATH)
     openshift_ci_trigger_job_mocker.ok = True
 
@@ -38,6 +41,8 @@ def send_slack_message_mock(mocker):
 def base_config_dict(tmp_path_factory):
     return {
         "trigger_token": "123456",
+        "ocm_token": "abcdef",
+        "aws_region": "us-east-1",
         "slack_webhook_url": "https://webhook",
         "slack_errors_webhook_url": "https://webhook-error",
         "processed_versions_file_path": tmp_path_factory.getbasetemp() / "processed_versions.json",
@@ -49,11 +54,18 @@ def get_config_mocker(mocker):
     return mocker.patch(f"{LIBS_ZSTREAM_TRIGGER_PATH}.get_config")
 
 
+@pytest.fixture
+def ocm_client_mocker(mocker):
+    mock_ocm_client = mocker.patch(f"{LIBS_ZSTREAM_TRIGGER_PATH}.OCMPythonClient")
+    return mock_ocm_client.client
+
+
 @pytest.fixture()
 def config_dict(get_config_mocker, base_config_dict):
     base_config_dict["versions"] = {
         "4.13": ["<openshift-ci-test-name-4.13>"],
         "4.13-rc": ["<openshift-ci-test-name-4.13-rc>"],
+        "4.13-rc___stage___": ["<openshift-ci-test-name-4.13-rc-stage>"],
     }
     get_config_mocker.return_value = base_config_dict
 
@@ -85,17 +97,27 @@ def test_process_and_trigger_jobs_config_with_empty_version(config_dict_empty_ve
     assert process_and_trigger_jobs(logger=LOGGER) == {"4.15": "No jobs found"}
 
 
-def test_process_and_trigger_jobs(config_dict, job_trigger_and_get_versions_mocker):
-    assert process_and_trigger_jobs(logger=LOGGER) == {"4.13": "Triggered", "4.13-rc": "Triggered"}
+def test_process_and_trigger_jobs(config_dict, job_trigger_and_get_versions_mocker, ocm_client_mocker):
+    assert process_and_trigger_jobs(logger=LOGGER) == {
+        "4.13": "Triggered",
+        "4.13-rc": "Triggered",
+        "4.13-rc-stage": "Triggered",
+    }
 
 
-def test_process_and_trigger_jobs_already_triggered(mocker, config_dict, job_trigger_and_get_versions_mocker):
+def test_process_and_trigger_jobs_already_triggered(
+    mocker, config_dict, job_trigger_and_get_versions_mocker, ocm_client_mocker
+):
     mocker.patch(
         f"{LIBS_ZSTREAM_TRIGGER_PATH}.processed_versions_file",
         return_value={"4.13": ["4.13.34", "4.13.33"]},
     )
 
-    assert process_and_trigger_jobs(logger=LOGGER) == {"4.13": "Already processed", "4.13-rc": "Triggered"}
+    assert process_and_trigger_jobs(logger=LOGGER) == {
+        "4.13": "Already processed",
+        "4.13-rc": "Triggered",
+        "4.13-rc-stage": "Triggered",
+    }
 
 
 def test_process_and_trigger_jobs_set_version(config_dict, job_trigger_and_get_versions_mocker):
