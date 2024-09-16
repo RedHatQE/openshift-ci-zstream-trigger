@@ -11,13 +11,13 @@ from typing import Dict, List
 
 from ocp_utilities.cluster_versions import get_accepted_cluster_versions
 from ocm_python_wrapper.ocm_client import OCMPythonClient
+from rosa.rosa_versions import get_rosa_versions
 from semver import Version
 import packaging.version
 
 from ci_jobs_trigger.utils.constant import DAYS_TO_SECONDS
 from ci_jobs_trigger.utils.general import get_config, get_gitlab_api, send_slack_message
 from ci_jobs_trigger.libs.openshift_ci.utils.general import openshift_ci_trigger_job
-from ci_jobs_trigger.libs.openshift_ci.zstream_trigger.rosa_utils import get_rosa_versions
 
 
 OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG_OS_ENV_STR: str = "OPENSHIFT_CI_ZSTREAM_TRIGGER_CONFIG"
@@ -58,6 +58,15 @@ def already_processed_version(
     return False
 
 
+def get_gitlab_project_files(config: Dict, ocm_env: str):
+    api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
+    project = api.projects.get(config["gitlab_project"])
+    project_file_content = project.files.get(
+        file_path=f"config/{'prod' if ocm_env == 'production' else ocm_env}.yaml", ref="master"
+    )
+    return yaml.safe_load(project_file_content.decode().decode("utf-8"))
+
+
 def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: str, logger: logging.Logger) -> bool:
     processed_versions_file_path = config["processed_versions_file_path"]
     processed_versions_file_content = processed_versions_file(
@@ -68,13 +77,8 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
     if processed_versions_file_content.get(enable_channel_version_key):
         return True
 
-    api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
-    project = api.projects.get(config["gitlab_project"])
-    project_file_content = project.files.get(
-        file_path=f"config/{'prod' if ocm_env == 'production' else ocm_env}.yaml", ref="master"
-    )
-    file_yaml_content = yaml.safe_load(project_file_content.decode().decode("utf-8"))
-    for channel_groups in file_yaml_content.get("channel_groups", []):
+    project_file_content = get_gitlab_project_files(config=config, ocm_env=ocm_env)
+    for channel_groups in project_file_content.get("channel_groups", []):
         if channel_version in channel_groups.get("channels", []):
             processed_versions_file_content[enable_channel_version_key] = True
             with open(processed_versions_file_path, "w") as fd:
@@ -84,8 +88,17 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
     return False
 
 
+def filter_rosa_versions_by_channel(all_rosa_versions: Dict, rosa_channel: str, version_channel: str) -> Dict:
+    filtered_rosa_dict: Dict = {}
+    filtered_rosa_dict[version_channel] = {}
+    for version_key, versions in all_rosa_versions[rosa_channel].items():
+        filtered_rosa_dict[version_channel][version_key] = [ver for ver in versions if version_channel in ver]
+
+    return filtered_rosa_dict
+
+
 def get_all_rosa_versions(
-    ocm_token: str, ocm_env: str, channel: str, aws_region: str
+    ocm_token: str, ocm_env: str, rosa_channel: str, version_channel: str, aws_region: str
 ) -> Dict[str, Dict[str, List[str]]]:
     ocm_client = OCMPythonClient(
         token=ocm_token,
@@ -93,7 +106,15 @@ def get_all_rosa_versions(
         api_host=ocm_env,
         discard_unknown_keys=True,
     ).client
-    return get_rosa_versions(ocm_client=ocm_client, aws_region=aws_region, channel_group=channel)
+    _all_rosa_versions = get_rosa_versions(ocm_client=ocm_client, aws_region=aws_region, channel_group=rosa_channel)
+
+    # To filter 'rc' and 'ec' versions from 'candidate' channel-group versions
+    if not rosa_channel == version_channel:
+        return filter_rosa_versions_by_channel(
+            all_rosa_versions=_all_rosa_versions, rosa_channel=rosa_channel, version_channel=version_channel
+        )
+
+    return _all_rosa_versions
 
 
 def trigger_jobs(config: Dict, jobs: List, logger: logging.Logger, zstream_version: str) -> bool:
@@ -188,16 +209,16 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
 
             if "-" in _version:
                 _wanted_version, _version_channel = _version.split("-")
-                _version_channel = "candidate" if _rosa_env and _version_channel in ["rc", "ec"] else _version_channel
             else:
                 _wanted_version = _version
                 _version_channel = "stable"
 
             _base_version = f"{_version}-{_rosa_env}" if _rosa_env else _version
+            _rosa_channel = "candidate" if _rosa_env and _version_channel in ["rc", "ec"] else _version_channel
 
             if _rosa_env and config.get("gitlab_project"):
                 if not is_rosa_version_enabed(
-                    config=config, version=_wanted_version, channel=_version_channel, ocm_env=_rosa_env, logger=logger
+                    config=config, version=_wanted_version, channel=_rosa_channel, ocm_env=_rosa_env, logger=logger
                 ):
                     logger.info(
                         f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} not enabled for ROSA {_rosa_env}, skipping"
@@ -209,7 +230,8 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 get_all_rosa_versions(
                     ocm_env=_rosa_env,
                     ocm_token=config["ocm_token"],
-                    channel=_version_channel,
+                    rosa_channel=_rosa_channel,
+                    version_channel=_version_channel,
                     aws_region=config["aws_region"],
                 )
                 if _rosa_env

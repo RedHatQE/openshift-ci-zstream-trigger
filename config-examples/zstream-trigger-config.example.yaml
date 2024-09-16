@@ -12,7 +12,7 @@ slack_errors_webhook_url: <slack webhook url to post code errors>
 run_interval: 24h # can be s/m/h
 cron_schedule: "0 0 * * *" # cron schedule for the trigger
 
-# Optional, Required for checking if rosa channel-version is enabled for OCM or not
+# Optional, Required if you also want to check if rosa channel-version is enabled for OCM or not
 gitlab_project: <gitlab-username/projectname>
 gitlab_url: <gitlab-instance-url>
 gitlab_token: <gitlab-token>
