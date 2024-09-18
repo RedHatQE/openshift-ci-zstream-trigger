@@ -58,7 +58,7 @@ def already_processed_version(
     return False
 
 
-def get_gitlab_project_files(config: Dict, ocm_env: str):
+def get_gitlab_project_file(config: Dict, ocm_env: str) -> Dict:
     api = get_gitlab_api(url=config["gitlab_url"], token=config["gitlab_token"])
     project = api.projects.get(config["gitlab_project"])
     project_file_content = project.files.get(
@@ -67,7 +67,7 @@ def get_gitlab_project_files(config: Dict, ocm_env: str):
     return yaml.safe_load(project_file_content.decode().decode("utf-8"))
 
 
-def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: str, logger: logging.Logger) -> bool:
+def is_rosa_version_enabled(config: Dict, version: str, channel: str, ocm_env: str, logger: logging.Logger) -> bool:
     processed_versions_file_path = config["processed_versions_file_path"]
     processed_versions_file_content = processed_versions_file(
         processed_versions_file_path=processed_versions_file_path, logger=logger
@@ -77,7 +77,7 @@ def is_rosa_version_enabed(config: Dict, version: str, channel: str, ocm_env: st
     if processed_versions_file_content.get(enable_channel_version_key):
         return True
 
-    project_file_content = get_gitlab_project_files(config=config, ocm_env=ocm_env)
+    project_file_content = get_gitlab_project_file(config=config, ocm_env=ocm_env)
     for channel_groups in project_file_content.get("channel_groups", []):
         if channel_version in channel_groups.get("channels", []):
             processed_versions_file_content[enable_channel_version_key] = True
@@ -204,6 +204,8 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 continue
 
             _rosa_env: str = ""
+
+            # If '___' found in any version, it will be considered as ROSA version
             if "___" in _version:
                 _version, _rosa_env = _version.split("___")[:2]
 
@@ -217,13 +219,13 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
             _rosa_channel = "candidate" if _rosa_env and _version_channel in ["rc", "ec"] else _version_channel
 
             if _rosa_env and config.get("gitlab_project"):
-                if not is_rosa_version_enabed(
+                if not is_rosa_version_enabled(
                     config=config, version=_wanted_version, channel=_rosa_channel, ocm_env=_rosa_env, logger=logger
                 ):
                     logger.info(
                         f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} not enabled for ROSA {_rosa_env}, skipping"
                     )
-                    trigger_res[_base_version] = "Not enabled for ROsA"
+                    trigger_res[_base_version] = "Not enabled for ROSA"
                     continue
 
             _all_versions = (

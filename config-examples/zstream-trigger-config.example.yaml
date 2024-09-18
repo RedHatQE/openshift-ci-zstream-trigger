@@ -17,6 +17,7 @@ gitlab_project: <gitlab-username/projectname>
 gitlab_url: <gitlab-instance-url>
 gitlab_token: <gitlab-token>
 
+# For providing ROSA version, it is mandatory to add ocm_env '___<stage/production>___' to version
 versions:
   "4.14-rc": # Will take latest 4.14 RC version
     - <openshift-ci-test-name-1>
