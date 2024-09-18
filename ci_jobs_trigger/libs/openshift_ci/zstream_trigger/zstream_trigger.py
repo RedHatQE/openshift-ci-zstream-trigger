@@ -89,8 +89,7 @@ def is_rosa_version_enabled(config: Dict, version: str, channel: str, ocm_env: s
 
 
 def filter_rosa_versions_by_channel(all_rosa_versions: Dict, rosa_channel: str, version_channel: str) -> Dict:
-    filtered_rosa_dict: Dict = {}
-    filtered_rosa_dict[version_channel] = {}
+    filtered_rosa_dict: Dict = {version_channel: {}}
     for version_key, versions in all_rosa_versions[rosa_channel].items():
         filtered_rosa_dict[version_channel][version_key] = [ver for ver in versions if version_channel in ver]
 
@@ -239,7 +238,15 @@ def process_and_trigger_jobs(logger: logging.Logger, version: str | None = None)
                 if _rosa_env
                 else get_accepted_cluster_versions()
             )
-            _latest_version = _all_versions.get(_version_channel)[_wanted_version][0]
+
+            if not (wanted_version_list := _all_versions.get(_version_channel).get(_wanted_version)):
+                logger.info(
+                    f"{LOG_PREFIX} Version {_wanted_version}:{_version_channel} {_rosa_env} not yet released, skipping"
+                )
+                trigger_res[_base_version] = "Not released"
+                continue
+
+            _latest_version = wanted_version_list[0]
             if already_processed_version(
                 base_version=_base_version,
                 new_version=_latest_version,
