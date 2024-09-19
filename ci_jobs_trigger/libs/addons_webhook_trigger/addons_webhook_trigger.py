@@ -1,21 +1,13 @@
 import re
 
-import gitlab
-
 from ci_jobs_trigger.libs.utils.general import trigger_ci_job
-from ci_jobs_trigger.utils.general import get_config, AddonsWebhookTriggerError
+from ci_jobs_trigger.utils.general import get_config, get_gitlab_api, AddonsWebhookTriggerError
 
 ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG_STR = "ADDONS_WEBHOOK_JOBS_TRIGGER_CONFIG"
 
 
 class RepositoryNotFoundError(Exception):
     pass
-
-
-def get_gitlab_api(url, token):
-    gitlab_api = gitlab.Gitlab(url=url, private_token=token, ssl_verify=False)
-    gitlab_api.auth()
-    return gitlab_api
 
 
 def repo_data_from_config(repository_name, config_data):
