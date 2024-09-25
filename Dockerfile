@@ -16,7 +16,8 @@ COPY ci_jobs_trigger/ /ci-jobs-trigger/ci_jobs_trigger/
 WORKDIR /ci-jobs-trigger
 
 # Set OCM_CONFIG to save ocm credentials for login
-RUN mkdir -p config/ocm
+RUN mkdir -p config/ocm \
+    && chmod 755 /ci-jobs-trigger/config/ocm
 ENV OCM_CONFIG=/ci-jobs-trigger/config/ocm/ocm.json
 
 RUN python3 -m pip install pip --upgrade \
