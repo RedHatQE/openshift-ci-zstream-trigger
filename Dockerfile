@@ -14,6 +14,13 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/rosa/latest/ro
 COPY pyproject.toml poetry.lock README.md /ci-jobs-trigger/
 COPY ci_jobs_trigger/ /ci-jobs-trigger/ci_jobs_trigger/
 WORKDIR /ci-jobs-trigger
+
+# Set OCM_CONFIG to save ocm credentials for login
+RUN mkdir -p config/ocm && \
+    chgrp -R 0 /ci-jobs-trigger/config/ocm && \
+    chmod -R g=u /ci-jobs-trigger/config/ocm
+ENV OCM_CONFIG=/ci-jobs-trigger/config/ocm/ocm.json
+
 RUN python3 -m pip install pip --upgrade \
     && python3 -m pip install poetry pre-commit \
     && poetry config cache-dir /ci-jobs-trigger \
