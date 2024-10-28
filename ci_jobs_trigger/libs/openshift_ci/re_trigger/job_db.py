@@ -19,8 +19,7 @@ class DB:
         self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
         self.cursor.execute(
-            f"CREATE TABLE if not exists {self.table_name}("
-            f"{self.job_name_column} TEXT, {self.prow_job_id_column} TEXT)"
+            f"CREATE TABLE if not exists {self.table_name}({self.job_name_column} TEXT, {self.prow_job_id_column} TEXT)"
         )
 
         return self
@@ -42,7 +41,7 @@ class DB:
     def write(self, job_name, prow_job_id):
         def _insert_to_db(_job_name, _prow_job_id):
             self.cursor.execute(
-                f"INSERT INTO {self.table_name} " f"(job_name, prow_job_id) VALUES ('{_job_name}', '{_prow_job_id}')"
+                f"INSERT INTO {self.table_name} (job_name, prow_job_id) VALUES ('{_job_name}', '{_prow_job_id}')"
             )
 
         for _ in TimeoutSampler(
