@@ -61,9 +61,9 @@ def test_failed_job_in_pre_phase(junit_file, job_triggering):
 )
 def test_failed_job_in_tests_phase(junit_file, job_triggering):
     tests_dict = job_triggering.get_testsuites_testcase_from_junit_operator(junit_xml=junit_file)
-    assert not job_triggering.is_build_failed_on_setup(
-        tests_dict=tests_dict
-    ), "Job should fail on test phase but did not"
+    assert not job_triggering.is_build_failed_on_setup(tests_dict=tests_dict), (
+        "Job should fail on test phase but did not"
+    )
 
 
 class TestJobTriggering:
