@@ -38,7 +38,7 @@ packages = [{ include = "ci_jobs_trigger" }]
 
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 openshift-python-utilities = "^5.0.26"
 requests = "^2.31.0"
 semver = "^3.0.2"
